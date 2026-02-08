@@ -16,7 +16,7 @@ final class TabBarController: UITabBarController {
         
         addTopDividerToBar()
         
-        let homeVC = HomeViewController()
+        let homeVC = TrackersViewController()
         let statsVC = StatisticsViewController()
         
         let homeNav = UINavigationController(rootViewController: homeVC)
@@ -34,7 +34,7 @@ final class TabBarController: UITabBarController {
             selectedImage: nil
         )
         
-        viewControllers = [homeVC, statsVC]
+        viewControllers = [homeNav, statsNav]
         
     }
     
