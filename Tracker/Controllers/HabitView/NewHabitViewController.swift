@@ -8,10 +8,9 @@
 import UIKit
 class NewHabitViewController: UIViewController, UITextFieldDelegate {
     
-    var onSave: ((Tracker) -> Void)?
+    var onSave: ((Tracker, String) -> Void)?
     private var selectedSchedule: Set<WeekDay> = []
     private var categoryTitleLabel: UILabel?
-    private var selectedCategory: String?
     
     private var categoryButtonTopWhenErrorHidden: NSLayoutConstraint!
     private var categoryButtonTopWhenErrorVisible: NSLayoutConstraint!
@@ -24,6 +23,7 @@ class NewHabitViewController: UIViewController, UITextFieldDelegate {
         }
     }
     private let availableCategories = ["Полезные привычки", "Личностный рост", "Здоровье", "Учёба"]
+    private var selectedCategory: String = "Важное" // ← теперь по умолчанию "Важное"
     
     private lazy var textField: UITextField = {
         let text = UITextField()
@@ -74,10 +74,18 @@ class NewHabitViewController: UIViewController, UITextFieldDelegate {
         return label
     }()
     
+    private lazy var categoryScheduleBlock: UIView = {
+        let view = UIView()
+        view.backgroundColor = .appBackground
+        view.layer.cornerRadius = 16
+        view.clipsToBounds = true
+        view.translatesAutoresizingMaskIntoConstraints = false
+        return view
+    }()
     
     private lazy var categoryButton: UIButton = {
         let button = UIButton(type: .system)
-        button.backgroundColor = .appBackground
+        button.backgroundColor = .clear
         button.layer.cornerRadius = 16
         button.clipsToBounds = true
         button.titleLabel?.font = UIFont.systemFont(ofSize: 17, weight: .regular)
@@ -108,7 +116,7 @@ class NewHabitViewController: UIViewController, UITextFieldDelegate {
     
     private lazy var scheduleButton: UIButton = {
         let button = UIButton(type: .system)
-        button.backgroundColor = .appBackground
+        button.backgroundColor = .clear
         button.layer.cornerRadius = 16
         button.clipsToBounds = true
         button.titleLabel?.font = UIFont.systemFont(ofSize: 17, weight: .regular)
@@ -146,7 +154,7 @@ class NewHabitViewController: UIViewController, UITextFieldDelegate {
             view.translatesAutoresizingMaskIntoConstraints = false
             return view
         }()
-    
+
     private lazy var createButton: UIButton = {
         let button = UIButton(type: .system)
         button.backgroundColor = .appGray
@@ -156,6 +164,7 @@ class NewHabitViewController: UIViewController, UITextFieldDelegate {
         button.setTitle("Создать", for: .normal)
         button.setTitleColor(.appWhite, for: .normal)
         button.contentHorizontalAlignment = .center
+        button.addTarget(self, action: #selector(createButtonTapped), for: .touchUpInside)
         button.translatesAutoresizingMaskIntoConstraints = false
         
         return button
@@ -183,15 +192,19 @@ class NewHabitViewController: UIViewController, UITextFieldDelegate {
         view.backgroundColor = .appWhite
         setupUI()
         conditionCreateButton()
+        updateCategoryButtonTitle()
         
     }
     
     private func setupUI() {
         view.addSubview(textField)
         view.addSubview(errorLabel)
-        view.addSubview(categoryButton)
-        view.addSubview(dividerView)
-        view.addSubview(scheduleButton)
+        categoryScheduleBlock.backgroundColor = .appBackground
+        view.addSubview(categoryScheduleBlock)
+        
+        categoryScheduleBlock.addSubview(categoryButton)
+        categoryScheduleBlock.addSubview(scheduleButton)
+        categoryScheduleBlock.addSubview(dividerView)
         
         textField.inputAccessoryView = keyboardToolbar
         
@@ -204,8 +217,7 @@ class NewHabitViewController: UIViewController, UITextFieldDelegate {
         stackBottomButton.addArrangedSubview(cancelButton)
         stackBottomButton.addArrangedSubview(createButton)
         view.addSubview(stackBottomButton)
-        
-        
+
         let leftPaddingView = UIView(frame: CGRect(x: 0, y: 0, width: 16, height: textField.frame.height))
         textField.leftView = leftPaddingView
         textField.leftViewMode = .always
@@ -225,20 +237,26 @@ class NewHabitViewController: UIViewController, UITextFieldDelegate {
             errorLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
             errorLabel.heightAnchor.constraint(equalToConstant: 20),
             
-            categoryButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
-            categoryButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
+            categoryScheduleBlock.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
+            categoryScheduleBlock.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
+            categoryScheduleBlock.heightAnchor.constraint(equalToConstant: 150.5),
+            scheduleButton.bottomAnchor.constraint(lessThanOrEqualTo: view.keyboardLayoutGuide.topAnchor, constant: -24),
+            
+            categoryButton.topAnchor.constraint(equalTo: categoryScheduleBlock.topAnchor),
             categoryButton.heightAnchor.constraint(equalToConstant: 75),
+            categoryButton.leadingAnchor.constraint(equalTo: categoryScheduleBlock.leadingAnchor),
+            categoryButton.trailingAnchor.constraint(equalTo: categoryScheduleBlock.trailingAnchor),
             
             dividerView.topAnchor.constraint(equalTo: categoryButton.bottomAnchor),
             dividerView.leadingAnchor.constraint(equalTo: categoryButton.leadingAnchor, constant: 16),
             dividerView.trailingAnchor.constraint(equalTo: categoryButton.trailingAnchor, constant: -16),
             dividerView.heightAnchor.constraint(equalToConstant: 0.5),
-            
+        
             scheduleButton.topAnchor.constraint(equalTo: dividerView.bottomAnchor),
-            scheduleButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
-            scheduleButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
+            scheduleButton.leadingAnchor.constraint(equalTo: categoryScheduleBlock.leadingAnchor),
+            scheduleButton.trailingAnchor.constraint(equalTo: categoryScheduleBlock.trailingAnchor),
             scheduleButton.heightAnchor.constraint(equalToConstant: 75),
-            scheduleButton.bottomAnchor.constraint(lessThanOrEqualTo: view.keyboardLayoutGuide.topAnchor, constant: -24),
+            scheduleButton.bottomAnchor.constraint(equalTo: categoryScheduleBlock.bottomAnchor),
             
             stackBottomButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
             stackBottomButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
@@ -250,9 +268,6 @@ class NewHabitViewController: UIViewController, UITextFieldDelegate {
         categoryButtonTopWhenErrorVisible = categoryButton.topAnchor.constraint(equalTo: errorLabel.bottomAnchor, constant: 32)
         
         categoryButtonTopWhenErrorHidden.isActive = true
-        //  MARK: - setupTextField
-        //  MARK: - setupCategory
-        //  MARK: - setupSchedule
     }
     @objc private func dismissKeyboard() {
         textField.resignFirstResponder()
@@ -261,13 +276,21 @@ class NewHabitViewController: UIViewController, UITextFieldDelegate {
     @objc private func addTapCategory() {
         
     }
+    @objc private func createButtonTapped() {
+        guard let name = textField.text, !name.isEmpty else { return }
+        
+        let category = selectedCategory ?? availableCategories.first
+        
+        let newTracker = Tracker(id: UUID(), name: name, color: .appColorSelection1, emoji: "✅", schedule: selectedSchedule)
+        onSave?(newTracker, selectedCategory)
+        
+        dismiss(animated: true)
+    }
     
     @objc private func addTapSchedule() {
         let newScheduleVC = ScheduleVC()
         
         newScheduleVC.selectedDays = selectedSchedule
-        
-        
         newScheduleVC.onSave = { [weak self] days in
             guard let self = self else { return }
             self.selectedSchedule = Set(days)
@@ -290,11 +313,10 @@ class NewHabitViewController: UIViewController, UITextFieldDelegate {
         ]
         
         let daysAttributes: [NSAttributedString.Key: Any] = [
-            .font: UIFont.systemFont(ofSize: 17, weight: .medium),
+            .font: UIFont.systemFont(ofSize: 17, weight: .regular),
             .foregroundColor: UIColor.appGray
         ]
-        
-        // Точное вычисление диапазонов
+
         let titleWithNewline = "Расписание\n"
         let titleRange = NSRange(location: 0, length: titleWithNewline.utf16.count)
         let daysRange = NSRange(location: titleRange.length, length: displayText.utf16.count)
@@ -324,10 +346,8 @@ class NewHabitViewController: UIViewController, UITextFieldDelegate {
         let categoryAttributes: [NSAttributedString.Key: Any] = [
             .font: UIFont.systemFont(ofSize: 17, weight: .regular),
             .foregroundColor: UIColor.appGray
-            
         ]
-        
-        
+
         let titleWithNewline = "Категория\n"
         let mainTitleRange = NSRange(location: 0, length: titleWithNewline.utf16.count)
         
@@ -347,8 +367,7 @@ class NewHabitViewController: UIViewController, UITextFieldDelegate {
     private func conditionCreateButton() {
         let hasName = !(textField.text?.isEmpty ?? true)
         let hasSchedule = !selectedSchedule.isEmpty
-//        let hasCategory = selectedCategory != nil && !selectedCategory!.isEmpty
-        
+
         let isValid = hasName && hasSchedule
         
         createButton.isEnabled = isValid
@@ -375,8 +394,7 @@ class NewHabitViewController: UIViewController, UITextFieldDelegate {
 extension NewHabitViewController {
     func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
         guard let currentText = textField.text else { return true }
-        
-        // Считаем новый текст
+
         let newLength = currentText.count + string.count - range.length
         return newLength <= 38
     }

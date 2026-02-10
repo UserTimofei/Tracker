@@ -14,7 +14,6 @@ class ScheduleVC: UIViewController {
     private let tableViewContainer = UIView()
     private let tableView = UITableView()
     
-    
     private lazy var doneButton: UIButton = {
         let button = UIButton(type: .system)
         button.backgroundColor = .appBlack
@@ -32,20 +31,18 @@ class ScheduleVC: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "Расписание"
-        view.backgroundColor = .appWhite
-        navigationItem.hidesBackButton = true
-        setupTableView()
+        setupNavigationItem()
         setupUI()
-        DispatchQueue.main.async {
-            self.tableView.reloadData()
-        }
-        
+    }
+    
+    private func setupNavigationItem() {
+        navigationItem.hidesBackButton = true
     }
     
     private func setupUI() {
+        setupTableView()
+        title = "Расписание"
         view.backgroundColor = .appWhite
-//        tableViewContainer.backgroundColor = .clear
         view.addSubview(tableViewContainer)
         view.addSubview(doneButton)
         tableView.translatesAutoresizingMaskIntoConstraints = false
@@ -54,7 +51,6 @@ class ScheduleVC: UIViewController {
         tableViewContainer.backgroundColor = .appBackground
         tableViewContainer.layer.cornerRadius = 16
         tableViewContainer.clipsToBounds = true
-        
         
         NSLayoutConstraint.activate([
             tableViewContainer.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 24),
@@ -81,15 +77,13 @@ class ScheduleVC: UIViewController {
         tableView.backgroundColor = .appBackground
         tableView.register(ScheduleCell.self, forCellReuseIdentifier: ScheduleCell.reuseIdentifier)
         tableView.separatorStyle = .none
-//        tableView.separatorColor = .appGray
-//        tableView.separatorInset = UIEdgeInsets(top: 0, left: 16, bottom: 0, right: 16)
+
     }
     
     @objc private func cancelNewHabit() {
         onSave?(selectedDays)
         navigationController?.popViewController(animated: true)
     }
-    
 }
 
 extension ScheduleVC: UITableViewDataSource, UITableViewDelegate {
@@ -121,11 +115,9 @@ extension ScheduleVC: UITableViewDataSource, UITableViewDelegate {
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
         return 75
     }
-    
-    
 }
 
-class ScheduleCell: UITableViewCell {
+final class ScheduleCell: UITableViewCell {
     static let reuseIdentifier = "ScheduleCell"
     
     private let separatorView = UIView()
@@ -164,7 +156,6 @@ class ScheduleCell: UITableViewCell {
         contentView.addSubview(titleLabel)
         contentView.addSubview(switchControl)
         
-        
         separatorView.backgroundColor = .appGray
         separatorView.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(separatorView)
@@ -190,8 +181,6 @@ class ScheduleCell: UITableViewCell {
         
         separatorView.isHidden = isLast
     }
-    
-    
     
     @objc private func switchValueChanged(_ sender: UISwitch) {
         onToggle?(sender.isOn)

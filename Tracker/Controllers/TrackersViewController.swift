@@ -7,15 +7,17 @@
 
 import UIKit
 
-
-
-class TrackersViewController: UIViewController, UICollectionViewDelegate, UISearchResultsUpdating {
+class TrackersViewController: UIViewController, UICollectionViewDelegate, UISearchResultsUpdating, SearchServiceDelegate {
+    func didUpdateSearchResults(_ filteredCategories: [TrackerCategory]) {
+        visibleCategories = filteredCategories
+        collectionView.reloadData()
+        updatePlaceholderVisibility()
+    }
+    
     func updateSearchResults(for searchController: UISearchController) {
         let searchText = searchController.searchBar.text ?? ""
         searchService.filterCategories(searchText: searchText)
     }
-    
-    
     // MARK: - Properties
     private var categories: [TrackerCategory] = []
     private var visibleCategories: [TrackerCategory] = []
@@ -83,12 +85,16 @@ class TrackersViewController: UIViewController, UICollectionViewDelegate, UISear
         super.viewDidLoad()
         setupNavigationBar()
         setupTestData()
-        setupUI()
+        
+        searchService.delegate = self
+        searchService.updateCategories(categories)
         
         collectionView.register(TrackerCategoryHeader.self, forSupplementaryViewOfKind: UICollectionView.elementKindSectionHeader, withReuseIdentifier: TrackerCategoryHeader.reuseIdentifier)
         
         collectionView.dataSource = self
         collectionView.delegate = self
+        
+        setupUI()
         
         updatePlaceholderVisibility()
     }
@@ -127,10 +133,8 @@ class TrackersViewController: UIViewController, UICollectionViewDelegate, UISear
             )
         ]
         
-        
-        
         categories = [
-            TrackerCategory(header: "Полезные привычки", trackers: testTrackers),
+            TrackerCategory(header: "Важное", trackers: []),
             TrackerCategory(header: "Неполезные привычки", trackers: testTrackers2)
         ]
         visibleCategories = categories
@@ -226,11 +230,9 @@ class TrackersViewController: UIViewController, UICollectionViewDelegate, UISear
         definesPresentationContext = true
         search.searchBar.delegate = self
         
-        
         navigationItem.title = "Трекеры"
         navigationController?.navigationBar.prefersLargeTitles = true
         navigationItem.largeTitleDisplayMode = .always
-    
 
         let datePicker = UIDatePicker()
         datePicker.preferredDatePickerStyle = .compact
@@ -248,8 +250,6 @@ class TrackersViewController: UIViewController, UICollectionViewDelegate, UISear
         let maxDate = calendar.date(byAdding: .year, value: 10, to: currentDate)
         datePicker.minimumDate = minDate
         datePicker.maximumDate = maxDate
-        
-
     }
     
     // MARK: - Actions
@@ -261,8 +261,7 @@ class TrackersViewController: UIViewController, UICollectionViewDelegate, UISear
         // Обновляем UI
         collectionView.reloadData()
         updatePlaceholderVisibility()
-        
-        // Для отладки (можно удалить)
+    
         let formatter = DateFormatter()
         formatter.dateFormat = "dd.MM.yy"
         print("Выбрана дата: \(formatter.string(from: currentDate))")
@@ -271,8 +270,8 @@ class TrackersViewController: UIViewController, UICollectionViewDelegate, UISear
     @objc private func addButtonTapped() {
         
         let newHabitVC = NewHabitViewController()
-        newHabitVC.onSave = { [weak self] tracker in
-            self?.addTracker(tracker, toCategoryAtIndex: "Полезные привычки")
+        newHabitVC.onSave = { [weak self] tracker, category in
+            self?.addTracker(tracker, toCategoryAtIndex: category)
         }
         let navController = UINavigationController(rootViewController: newHabitVC)
         navController.modalPresentationStyle = .pageSheet
@@ -295,13 +294,14 @@ class TrackersViewController: UIViewController, UICollectionViewDelegate, UISear
                     trackers: category.trackers + [newTracker]
                 )
             }
-            
             return category
-            
         }
         
         categories = updateCategory
         visibleCategories = updateCategory
+        
+        searchService.updateCategories(categories)
+        
         collectionView.reloadData()
         updatePlaceholderVisibility()
     }
@@ -352,7 +352,6 @@ extension TrackersViewController: UICollectionViewDataSource {
         let category = visibleCategories[section]
         let trackersForToday = getTrackersForToday(in: category)
         return trackersForToday.count
-                                                    
                                                     
     }
     
@@ -433,28 +432,6 @@ extension TrackersViewController: UICollectionViewDataSource {
         return CGSize(width: width, height: 112)
     }
 }
-
-//extension TrackerViewController: UICollectionViewDelegateFlowLayout {
-//
-//    func collectionView(
-//        _ collectionView: UICollectionView,
-//        layout collectionViewLayout: UICollectionViewLayout,
-//        sizeForItemAt indexPath: IndexPath
-//    ) -> CGSize {
-//
-//        let width = (collectionView.bounds.width - 16 * 2 - 8) / 2
-//        return CGSize(width: width, height: 148)
-//    }
-//
-//    func collectionView(
-//        _ collectionView: UICollectionView,
-//        layout collectionViewLayout: UICollectionViewLayout,
-//        referenceSizeForHeaderInSection section: Int
-//    ) -> CGSize {
-//
-//        CGSize(width: collectionView.bounds.width, height: 18)
-//    }
-//}
 
 extension TrackersViewController: UISearchBarDelegate {
     func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {

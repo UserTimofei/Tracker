@@ -16,14 +16,15 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         
         //1 scene
         guard let scene = (scene as? UIWindowScene) else { return }
-        
-        //2 init window
-        self.window = UIWindow(windowScene: scene)
-        //3 root controller - главный контроллер
-//        self.window?.rootViewController = HomeViewController()
-        self.window?.rootViewController = TabBarController()
-        self.window?.makeKeyAndVisible()
-        
+        configureWindowScene(with: scene)
+    }
+    
+    private func configureWindowScene(with scene: UIWindowScene) {
+        let window = UIWindow(windowScene: scene)
+        window.rootViewController = TabBarController()
+        window.makeKeyAndVisible()
+        self.window = window
+      
     }
 
 }
