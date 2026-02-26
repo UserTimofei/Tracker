@@ -54,6 +54,4 @@ final class TabBarController: UITabBarController {
         
         topDivider = divider
     }
-    
-    
 }

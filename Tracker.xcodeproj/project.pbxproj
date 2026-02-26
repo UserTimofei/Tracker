@@ -29,6 +29,11 @@
 			path = Tracker;
 			sourceTree = "<group>";
 		};
+		4170AD082F4BA43A0088765F /* CoreData */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = CoreData;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -45,6 +50,7 @@
 		4116F14D2F164B6500CD0A04 = {
 			isa = PBXGroup;
 			children = (
+				4170AD082F4BA43A0088765F /* CoreData */,
 				4116F1582F164B6500CD0A04 /* Tracker */,
 				4116F1572F164B6500CD0A04 /* Products */,
 			);
@@ -75,6 +81,7 @@
 			);
 			fileSystemSynchronizedGroups = (
 				4116F1582F164B6500CD0A04 /* Tracker */,
+				4170AD082F4BA43A0088765F /* CoreData */,
 			);
 			name = Tracker;
 			packageProductDependencies = (

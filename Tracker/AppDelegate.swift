@@ -6,16 +6,37 @@
 //
 
 import UIKit
+import CoreData
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
-
+    
+    var context: NSManagedObjectContext {
+        return persistentContainer.viewContext
+    }
 
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Override point for customization after application launch.
+        CoreDataTransformers.register()
+        print("✅ Трансформеры зарегистрированы")
         return true
     }
+    
+    lazy var persistentContainer: NSPersistentContainer = {
+        let container = NSPersistentContainer(name: "CoreData")
+
+        container.loadPersistentStores(completionHandler: {(storeDescription, error) in
+            if let error = error as NSError? {
+                fatalError("Не удалось загрузить хранилище: \(error), \(error.userInfo)")
+            }else {
+                print("✅ База данных загружена")
+            }
+        })
+        
+        return container
+    }()
+    
+    
 
     // MARK: UISceneSession Lifecycle
 
@@ -23,6 +44,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // Called when a new scene session is being created.
         // Use this method to select a configuration to create the new scene with.
         return UISceneConfiguration(name: "Default Configuration", sessionRole: connectingSceneSession.role)
+        
     }
 
     func application(_ application: UIApplication, didDiscardSceneSessions sceneSessions: Set<UISceneSession>) {
