@@ -39,7 +39,7 @@ final class TrackerRecordStore: Store{
  
         let calendar = Calendar.current
         let startOfDay = calendar.startOfDay(for: date)
-        let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay)!
+        let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay) ?? Date()
   
         let predicate = NSPredicate(
             format: "trackerId == %@ AND date >= %@ AND date < %@",
@@ -113,7 +113,7 @@ final class TrackerRecordStore: Store{
     }
     
 }
-extension TrackerRecordStore: NSFetchedResultsControllerDelegate {
+extension TrackerRecordStore: NSFetchedResultsControllerDelegate, RecordStoreProtocol {
     
     func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
         delegate?.didUpdate()

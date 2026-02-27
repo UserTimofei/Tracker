@@ -12,71 +12,77 @@ final class TrackerStore: Store {
     weak var delegate: StoreDelegate?
     
     private enum TrackerEntity {
-            static let name = "TrackerCoreData"
-            static let trackerId = "trackerId"
-            static let nameTracker = "nameTracker"
-            static let colorTracker = "colorTracker"
-            static let emoji = "emoji"
-            static let schedule = "schedule"
-            static let category = "category"
-        }
-        
-        private enum CategoryEntity {
-            static let title = "title"
-            static let trackers = "trackers"
-        }
+        static let name = "TrackerCoreData"
+        static let trackerId = "trackerId"
+        static let nameTracker = "nameTracker"
+        static let colorTracker = "colorTracker"
+        static let emoji = "emoji"
+        static let schedule = "schedule"
+        static let category = "category"
+    }
+    
+    private enum CategoryEntity {
+        static let title = "title"
+        static let trackers = "trackers"
+    }
+    private let categoryStore: TrackerCategoryStore
+    
+    init(context: NSManagedObjectContext, categoryStore: TrackerCategoryStore) {
+        self.categoryStore = categoryStore
+        super.init(context: context)
+    }
     
     lazy var fetchedResultsController: NSFetchedResultsController<NSManagedObject> = {
-            let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: TrackerEntity.name)
-            
-            fetchRequest.sortDescriptors = [
-                NSSortDescriptor(key: TrackerEntity.nameTracker, ascending: true)
-            ]
-            
-            let controller = NSFetchedResultsController(
-                fetchRequest: fetchRequest,
-                managedObjectContext: context,
-                sectionNameKeyPath: nil,
-                cacheName: nil
-            )
-            controller.delegate = self
-            return controller
-        }()
+        let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: TrackerEntity.name)
+        
+        fetchRequest.sortDescriptors = [
+            NSSortDescriptor(key: TrackerEntity.nameTracker, ascending: true)
+        ]
+        
+        let controller = NSFetchedResultsController(
+            fetchRequest: fetchRequest,
+            managedObjectContext: context,
+            sectionNameKeyPath: nil,
+            cacheName: nil
+        )
+        controller.delegate = self
+        return controller
+    }()
     
     func createTracker(
-            id: UUID,
-            name: String,
-            color: UIColor,
-            emoji: String,
-            schedule: Set<WeekDay>,
-            category: TrackerCategoryCoreData
-        ) throws -> Tracker {
-            let context = self.context
-            let trackerObject = NSEntityDescription.insertNewObject(forEntityName: TrackerEntity.name, into: context)
-            
-            trackerObject.setValue(id, forKey: TrackerEntity.trackerId)
-            trackerObject.setValue(name, forKey: TrackerEntity.nameTracker)
-            trackerObject.setValue(color, forKey: TrackerEntity.colorTracker)
-            trackerObject.setValue(emoji, forKey: TrackerEntity.emoji)
-            print("🔵 Сохраняем расписание напрямую: \(schedule)")
-            trackerObject.setValue(schedule, forKey: TrackerEntity.schedule)
-            
-            trackerObject.setValue(category, forKey: TrackerEntity.category)
-            
-            try saveContext()
-            
-            
-                return try decodeTracker(from: trackerObject)
-        }
+        id: UUID,
+        name: String,
+        color: UIColor,
+        emoji: String,
+        schedule: Set<WeekDay>,
+        category: TrackerCategoryCoreData
+    ) throws -> Tracker {
+        let context = self.context
+        let trackerObject = NSEntityDescription.insertNewObject(forEntityName: TrackerEntity.name, into: context)
+        
+        trackerObject.setValue(id, forKey: TrackerEntity.trackerId)
+        trackerObject.setValue(name, forKey: TrackerEntity.nameTracker)
+        trackerObject.setValue(color, forKey: TrackerEntity.colorTracker)
+        trackerObject.setValue(emoji, forKey: TrackerEntity.emoji)
+        print("🔵 Сохраняем расписание напрямую: \(schedule)")
+        trackerObject.setValue(schedule, forKey: TrackerEntity.schedule)
+        
+        trackerObject.setValue(category, forKey: TrackerEntity.category)
+        
+        try saveContext()
+        
+        
+        return try decodeTracker(from: trackerObject)
+    }
     
     private func decodeTracker(from object: NSManagedObject) throws -> Tracker {
-            guard let id = object.value(forKey: TrackerEntity.trackerId) as? UUID,
-                  let name = object.value(forKey: TrackerEntity.nameTracker) as? String,
-                  let color = object.value(forKey: TrackerEntity.colorTracker) as? UIColor,
-                  let emoji = object.value(forKey: TrackerEntity.emoji) as? String
-            else {
-                throw StoreError.decodingError("Не удалось декодировать трекер")
-            }
+        guard let id = object.value(forKey: TrackerEntity.trackerId) as? UUID,
+              let name = object.value(forKey: TrackerEntity.nameTracker) as? String,
+              let color = object.value(forKey: TrackerEntity.colorTracker) as? UIColor,
+              let emoji = object.value(forKey: TrackerEntity.emoji) as? String
+        else {
+            throw StoreError.decodingError("Не удалось декодировать трекер")
+        }
         var schedule: Set<WeekDay> = []
         if let weekdays = object.value(forKey: TrackerEntity.schedule) as? Set<WeekDay> {
             schedule = weekdays
@@ -130,94 +136,122 @@ final class TrackerStore: Store {
     }
     
     func updateTracker(
-           newTracker: Tracker,
-           category: TrackerCategoryCoreData? = nil
-       ) throws {
-           let context = self.context
-           let request = NSFetchRequest<NSManagedObject>(entityName: TrackerEntity.name)
-           request.predicate = NSPredicate(format: "%K == %@", TrackerEntity.trackerId, newTracker.id as CVarArg)
-           request.fetchLimit = 1
-           
-           guard let trackerObject = try context.fetch(request).first else {
-               throw StoreError.trackerNotFound
-           }
-           
-           trackerObject.setValue(newTracker.name, forKey: TrackerEntity.nameTracker)
-           trackerObject.setValue(newTracker.color, forKey: TrackerEntity.colorTracker)
-           trackerObject.setValue(newTracker.emoji, forKey: TrackerEntity.emoji)
-           trackerObject.setValue(newTracker.schedule, forKey: TrackerEntity.schedule)
-           
-           if let category = category {
-               trackerObject.setValue(category, forKey: TrackerEntity.category)
-           }
-           
-           try saveContext()
-       }
+        newTracker: Tracker,
+        category: TrackerCategoryCoreData? = nil
+    ) throws {
+        let context = self.context
+        let request = NSFetchRequest<NSManagedObject>(entityName: TrackerEntity.name)
+        request.predicate = NSPredicate(format: "%K == %@", TrackerEntity.trackerId, newTracker.id as CVarArg)
+        request.fetchLimit = 1
+        
+        guard let trackerObject = try context.fetch(request).first else {
+            throw StoreError.trackerNotFound
+        }
+        
+        trackerObject.setValue(newTracker.name, forKey: TrackerEntity.nameTracker)
+        trackerObject.setValue(newTracker.color, forKey: TrackerEntity.colorTracker)
+        trackerObject.setValue(newTracker.emoji, forKey: TrackerEntity.emoji)
+        trackerObject.setValue(newTracker.schedule, forKey: TrackerEntity.schedule)
+        
+        if let category = category {
+            trackerObject.setValue(category, forKey: TrackerEntity.category)
+        }
+        
+        try saveContext()
+    }
     
     func deleteTracker(id: UUID) throws {
-            let context = self.context
-            let request = NSFetchRequest<NSManagedObject>(entityName: TrackerEntity.name)
-            request.predicate = NSPredicate(format: "%K == %@", TrackerEntity.trackerId, id as CVarArg)
-            request.fetchLimit = 1
-            
-            guard let trackerObject = try context.fetch(request).first else {
-                throw StoreError.trackerNotFound
-            }
-            
-            context.delete(trackerObject)
-            try saveContext()
+        let context = self.context
+        let request = NSFetchRequest<NSManagedObject>(entityName: TrackerEntity.name)
+        request.predicate = NSPredicate(format: "%K == %@", TrackerEntity.trackerId, id as CVarArg)
+        request.fetchLimit = 1
+        
+        guard let trackerObject = try context.fetch(request).first else {
+            throw StoreError.trackerNotFound
         }
+        
+        context.delete(trackerObject)
+        try saveContext()
+    }
+    
+    func addTracker(_ tracker: Tracker, toCategory categoryTitle: String) throws {
+        
+        let categoryEntity: TrackerCategoryCoreData
+        if let existing = try self.categoryStore.fetchCategoryCoreData(by: categoryTitle) {
+            categoryEntity = existing
+        } else {
+            _ = try self.categoryStore.createCategory(title: categoryTitle)
+            guard let newCategory = try self.categoryStore.fetchCategoryCoreData(by: categoryTitle) else {
+                throw StoreError.categoryNotFound
+            }
+            categoryEntity = newCategory
+        }
+        
+        // 2. Создаём трекер
+        let trackerEntity = TrackerCoreData(context: context)
+        trackerEntity.trackerId = tracker.id
+        trackerEntity.nameTracker = tracker.name
+        trackerEntity.colorTracker = tracker.color
+        trackerEntity.emoji = tracker.emoji
+        trackerEntity.setValue(tracker.schedule, forKey: "schedule")
+        trackerEntity.category = categoryEntity
+        
+        // 3. Сохраняем
+        try saveContext()
+    }
 }
 
 extension TrackerStore:  NSFetchedResultsControllerDelegate {
     
+    
+    
     func setupFetchedResultsController(with predicate: NSPredicate? = nil) throws {
-            fetchedResultsController.fetchRequest.predicate = predicate
-            try fetchedResultsController.performFetch()
-        }
-        
-        var numberOfSections: Int {
-            return fetchedResultsController.sections?.count ?? 0
-        }
-        
-        func numberOfItemsInSection(_ section: Int) -> Int {
-            guard let sections = fetchedResultsController.sections, section < sections.count else { return 0 }
-            return sections[section].numberOfObjects
-        }
+        fetchedResultsController.fetchRequest.predicate = predicate
+        try fetchedResultsController.performFetch()
+    }
+    
+    var numberOfSections: Int {
+        return fetchedResultsController.sections?.count ?? 0
+    }
+    
+    func numberOfItemsInSection(_ section: Int) -> Int {
+        guard let sections = fetchedResultsController.sections, section < sections.count else { return 0 }
+        return sections[section].numberOfObjects
+    }
     
     func tracker(at indexPath: IndexPath) -> Tracker? {
-            guard indexPath.section < numberOfSections,
-                  indexPath.item < numberOfItemsInSection(indexPath.section) else {
-                print("⚠️ Запрошен несуществующий индекс: section \(indexPath.section), item \(indexPath.item)")
-                return nil
-            }
-            
-            let trackerObject = fetchedResultsController.object(at: indexPath)
-            return try? decodeTracker(from: trackerObject)
+        guard indexPath.section < numberOfSections,
+              indexPath.item < numberOfItemsInSection(indexPath.section) else {
+            print("⚠️ Запрошен несуществующий индекс: section \(indexPath.section), item \(indexPath.item)")
+            return nil
         }
+        
+        let trackerObject = fetchedResultsController.object(at: indexPath)
+        return try? decodeTracker(from: trackerObject)
+    }
     
     func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
-            delegate?.didUpdate()
-        }
+        delegate?.didUpdate()
+    }
     
     func controller(
-            _ controller: NSFetchedResultsController<NSFetchRequestResult>,
-            didChange anObject: Any,
-            at indexPath: IndexPath?,
-            for type: NSFetchedResultsChangeType,
-            newIndexPath: IndexPath?
-        ) {
-            switch type {
-            case .insert:
-                print("Вставлен объект по пути: \(newIndexPath!)")
-            case .delete:
-                print("Удален объект по пути: \(indexPath!)")
-            case .update:
-                print("Обновлен объект по пути: \(indexPath!)")
-            case .move:
-                print("Объект перемещен с \(indexPath!) на \(newIndexPath!)")
-            @unknown default:
-                break
-            }
+        _ controller: NSFetchedResultsController<NSFetchRequestResult>,
+        didChange anObject: Any,
+        at indexPath: IndexPath?,
+        for type: NSFetchedResultsChangeType,
+        newIndexPath: IndexPath?
+    ) {
+        switch type {
+        case .insert:
+            print("Вставлен объект по пути: \(newIndexPath!)")
+        case .delete:
+            print("Удален объект по пути: \(indexPath!)")
+        case .update:
+            print("Обновлен объект по пути: \(indexPath!)")
+        case .move:
+            print("Объект перемещен с \(indexPath!) на \(newIndexPath!)")
+        @unknown default:
+            break
         }
+    }
 }

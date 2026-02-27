@@ -16,7 +16,9 @@ final class TabBarController: UITabBarController {
         
         addTopDividerToBar()
         
-        let homeVC = TrackersViewController()
+        let store = AppDependencies.shared.makeTrackerStore()
+        let recordStore = AppDependencies.shared.makeRecordStore()
+        let homeVC = TrackersViewController(store: store, recordStore: recordStore)
         let statsVC = StatisticsViewController()
         
         let homeNav = UINavigationController(rootViewController: homeVC)

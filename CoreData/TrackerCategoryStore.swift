@@ -100,7 +100,7 @@ final class TrackerCategoryStore: Store {
         if let trackersSet = entity.trackers as? Set<TrackerCoreData> {
             print("  🔗 В категории '\(title)' найдено трекеров в отношении: \(trackersSet.count)")
             
-            let trackerStore = TrackerStore(context: context)
+            let trackerStore = TrackerStore(context: context, categoryStore: self)
             
             for trackerEntity in trackersSet {
                 if let trackerId = trackerEntity.trackerId {
