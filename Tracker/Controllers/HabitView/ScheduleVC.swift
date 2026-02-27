@@ -14,6 +14,7 @@ class ScheduleVC: UIViewController {
     private let tableViewContainer = UIView()
     private let tableView = UITableView()
     
+    
     private lazy var doneButton: UIButton = {
         let button = UIButton(type: .system)
         button.backgroundColor = .appBlack
@@ -81,6 +82,7 @@ class ScheduleVC: UIViewController {
     }
     
     @objc private func cancelNewHabit() {
+        print("📤 ScheduleVC: передаем выбранные дни: \(selectedDays.map { $0.rawValue })")
         onSave?(selectedDays)
         navigationController?.popViewController(animated: true)
     }

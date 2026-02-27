@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import CoreData
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
@@ -21,7 +22,10 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     
     private func configureWindowScene(with scene: UIWindowScene) {
         let window = UIWindow(windowScene: scene)
-        window.rootViewController = TabBarController()
+        
+        let tabBarController = TabBarController()
+        
+        window.rootViewController = tabBarController
         window.makeKeyAndVisible()
         self.window = window
       

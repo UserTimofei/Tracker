@@ -186,6 +186,8 @@ final class TrackerCell: UICollectionViewCell {
             self.completionCount = numbersOfCompletedTrackers
             self.onToggle = onToggle
             
+            print("🔧 TrackerCell.configure для \(tracker.name)")
+               print("   onToggle есть: \(onToggle != nil ? "✅" : "❌")")
                     
             let color = tracker.color
             coloredContainer.backgroundColor = color
@@ -206,6 +208,12 @@ final class TrackerCell: UICollectionViewCell {
             } else {
                 completeButton.alpha = isCompleted ? 0.6 : 1.0
             }
+    }
+    
+    func updateCounter(_ newCount: Int) {
+        completionCount = newCount
+        let word = declinationOfDays(newCount)
+        counterLabel.text = "\(newCount) \(word)"
     }
     
     
