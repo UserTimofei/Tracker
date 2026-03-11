@@ -1,10 +1,3 @@
-//
-//  TrackerCategoryHeader.swift
-//  Tracker
-//
-//  Created by Timofei Kirichenko on 28.01.2026.
-//
-
 import UIKit
 
 class TrackerCategoryHeader: UICollectionReusableView {

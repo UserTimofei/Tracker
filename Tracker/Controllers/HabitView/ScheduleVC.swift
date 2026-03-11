@@ -1,9 +1,3 @@
-//
-//  ScheduleVC.swift
-//  Tracker
-//
-//  Created by Timofei Kirichenko on 03.02.2026.
-//
 import UIKit
 
 class ScheduleVC: UIViewController {
@@ -127,7 +121,7 @@ final class ScheduleCell: UITableViewCell {
     
     private lazy var titleLabel: UILabel = {
         let title = UILabel()
-        title.font = UIFont.systemFont(ofSize: 17, weight: .regular)
+        title.font = UIFont.systemFont(ofSize: 16, weight: .medium)
         title.textColor = .appBlack
         title.translatesAutoresizingMaskIntoConstraints = false
         

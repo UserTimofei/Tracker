@@ -1,9 +1,3 @@
-//
-//  Store.swift
-//  Tracker
-//
-//  Created by Timofei Kirichenko on 20.02.2026.
-//
 import UIKit
 import CoreData
 
@@ -61,4 +55,5 @@ enum StoreError: Error {
     case trackerNotFound
     case categoryNotFound
     case recordNotFound
+    case categoryAlreadyExists 
 }

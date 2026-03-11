@@ -1,9 +1,3 @@
-//
-//  SearchManager.swift
-//  Tracker
-//
-//  Created by Timofei Kirichenko on 01.02.2026.
-//
 import Foundation
 import UIKit
 
