@@ -1,10 +1,3 @@
-//
-//  ViewController.swift
-//  Tracker
-//
-//  Created by Timofei Kirichenko on 13.01.2026.
-//
-
 import UIKit
 
 class TrackersViewController: UIViewController, UICollectionViewDelegate, UISearchResultsUpdating, SearchServiceDelegate {
@@ -25,6 +18,8 @@ class TrackersViewController: UIViewController, UICollectionViewDelegate, UISear
         searchService.filterCategories(searchText: searchText)
     }
     // MARK: - Properties
+    private var pinnedTrackers: Set<UUID> = []
+    
     private var categories: [TrackerCategory] = []
     private var visibleCategories: [TrackerCategory] = []
     private var completedTrackers: Set<TrackerRecord> = []
@@ -117,11 +112,15 @@ class TrackersViewController: UIViewController, UICollectionViewDelegate, UISear
         searchService.delegate = self
     }
     
-    
     private func loadInitialData() {
         do {
             categories = try store.fetchAllCategories()
             completedTrackers = Set(try recordStore.fetchAllRecords())
+            
+            if let pinnedIds = try? store.fetchAllPinnedTrackerIds() {
+                pinnedTrackers = Set(pinnedIds)
+            }
+            
             visibleCategories = categories
             collectionView.reloadData()
             updatePlaceholderVisibility()
@@ -129,7 +128,7 @@ class TrackersViewController: UIViewController, UICollectionViewDelegate, UISear
             print("Ошибка загрузки данных: \(error)")
         }
     }
-    
+   
     private func setupSearchService() {
         searchService.updateCategories(categories)
     }
@@ -138,47 +137,6 @@ class TrackersViewController: UIViewController, UICollectionViewDelegate, UISear
         collectionView.register(TrackerCategoryHeader.self, forSupplementaryViewOfKind: UICollectionView.elementKindSectionHeader, withReuseIdentifier: TrackerCategoryHeader.reuseIdentifier)
         collectionView.dataSource = self
         collectionView.delegate = self
-    }
-    
-    private func setupTestData() {
-        let testTrackers = [
-            Tracker(
-                id: UUID(),
-                name: "Пить воду",
-                color: .systemBlue,
-                emoji: "💧",
-                schedule: [.monday, .sunday, .tuesday, .friday, .saturday, .sunday, .wednesday]
-            ),
-            Tracker(
-                id: UUID(),
-                name: "Спорт",
-                color: .systemGreen,
-                emoji: "🏃‍♂️",
-                schedule: [.tuesday, .sunday]
-            )
-        ]
-        let testTrackers2 = [
-            Tracker(
-                id: UUID(),
-                name: "Пить воду",
-                color: .appRed,
-                emoji: "💧",
-                schedule: [.monday, .sunday, .tuesday, .friday, .saturday, .sunday, .wednesday]
-            ),
-            Tracker(
-                id: UUID(),
-                name: "Спорт",
-                color: .appColorSelection1,
-                emoji: "🏃‍♂️",
-                schedule: [.tuesday, .sunday]
-            )
-        ]
-        
-        categories = [
-            TrackerCategory(header: "Важное", trackers: []),
-            TrackerCategory(header: "Неполезные привычки", trackers: testTrackers2)
-        ]
-        visibleCategories = categories
     }
     
     private static func createLayout() -> UICollectionViewLayout {
@@ -357,20 +315,61 @@ class TrackersViewController: UIViewController, UICollectionViewDelegate, UISear
         
         print("📅 Фильтрация для дня недели: \(weekday)")
         
-        return visibleCategories.compactMap { category in
+        //        return categories.compactMap { category in
+        //            let trackersForToday = category.trackers.filter { tracker in
+        //                let contains = tracker.schedule.contains { $0.calendarWeekDay == weekday }
+        //                print("   Трекер '\(tracker.name)', расписание: \(tracker.schedule.map { $0.rawValue }), подходит: \(contains)")
+        //                return contains
+        //            }
+        //            return trackersForToday.isEmpty ? nil : TrackerCategory(
+        //                header: category.header,
+        //                trackers: trackersForToday
+        //            )
+        //        }
+        
+        // Сначала собираем все трекеры на сегодня
+        var allTodayTrackers: [Tracker] = []
+        for category in categories {
             let trackersForToday = category.trackers.filter { tracker in
-                let contains = tracker.schedule.contains { $0.calendarWeekDay == weekday }
-                print("   Трекер '\(tracker.name)', расписание: \(tracker.schedule.map { $0.rawValue }), подходит: \(contains)")
-                return contains
+                tracker.schedule.contains { $0.calendarWeekDay == weekday }
             }
-            return trackersForToday.isEmpty ? nil : TrackerCategory(
-                header: category.header,
-                trackers: trackersForToday
-            )
+            allTodayTrackers.append(contentsOf: trackersForToday)
         }
+        
+        // Разделяем на закрепленные и обычные
+        let pinned = allTodayTrackers.filter { pinnedTrackers.contains($0.id) }
+        let regular = allTodayTrackers.filter { !pinnedTrackers.contains($0.id) }
+        
+        // Группируем обычные по категориям
+        var regularCategories: [TrackerCategory] = []
+        for category in categories {
+            let trackersInCategory = regular.filter { tracker in
+                // Находим оригинальную категорию трекера
+                category.trackers.contains { $0.id == tracker.id }
+            }
+            if !trackersInCategory.isEmpty {
+                regularCategories.append(TrackerCategory(
+                    header: category.header,
+                    trackers: trackersInCategory
+                ))
+            }
+        }
+        
+        // Формируем результат: сначала закрепленные, потом остальные категории
+        var result: [TrackerCategory] = []
+        if !pinned.isEmpty {
+            result.append(TrackerCategory(header: "Закрепленные", trackers: pinned))
+        }
+        result.append(contentsOf: regularCategories)
+        
+        return result
+        
     }
+    
     private func getSectionHeaderTitle(for section: Int) -> String {
-        return "Важное"
+        let visibleCategories = getVisibleCategories()
+        guard section < visibleCategories.count else { return "" }
+        return visibleCategories[section].header
     }
     
 }
@@ -403,8 +402,6 @@ extension TrackersViewController: UICollectionViewDataSource {
         let count = visibleCategories[section].trackers.count
         print("📊 section \(section) numberOfItems: \(count)")
         return count
-        
-        
     }
     
     private func getTrackersForToday(in category: TrackerCategory) -> [Tracker] {
@@ -469,6 +466,9 @@ extension TrackersViewController: UICollectionViewDataSource {
         
         let tracker = visibleCategories[indexPath.section].trackers[indexPath.item]
         
+        let isPinned = pinnedTrackers.contains(tracker.id)
+        print("📍 Трекер '\(tracker.name)', isPinned: \(isPinned)")
+        
         if let cell = collectionView.cellForItem(at: indexPath) as? TrackerCell {
             let newCount = (try? self.recordStore.countRecords(for: tracker.id)) ?? 0
             cell.updateCounter(newCount)
@@ -493,6 +493,7 @@ extension TrackersViewController: UICollectionViewDataSource {
         
         cell.configure(
             with: tracker,
+            isPinned: isPinned,
             isCompleted: isCompleted,
             isFutureDate:isFuture,
             numbersOfCompletedTrackers: completionCount
@@ -549,9 +550,152 @@ extension TrackersViewController: UISearchBarDelegate {
     }
 }
 
+// MARK: - UICollectionViewDelegate
+extension TrackersViewController {
+    
+    func collectionView(_ collectionView: UICollectionView, contextMenuConfigurationForItemsAt indexPaths: [IndexPath], point: CGPoint) -> UIContextMenuConfiguration? {
+        
+        guard let indexPath = indexPaths.first else { return nil }
+        
+        let visibleCategories = getVisibleCategories()
+        guard indexPath.section < visibleCategories.count,
+              indexPath.item < visibleCategories[indexPath.section].trackers.count else {
+            return nil
+        }
+        
+        let tracker = visibleCategories[indexPath.section].trackers[indexPath.item]
+        let isPinned = pinnedTrackers.contains(tracker.id)
+        
+        return UIContextMenuConfiguration(actionProvider: { _ in
+            
+            // 👇 Пункт "Закрепить/Открепить"
+            let pinTitle = isPinned ? "Открепить" : "Закрепить"
+            let pinImage = isPinned ? "pin.slash" : "pin"
+            
+            let pinAction = UIAction(
+                title: pinTitle,
+                image: UIImage(systemName: pinImage)
+            ) { [weak self] _ in
+                self?.togglePin(for: tracker)
+            }
+            
+            // 👇 Пункт "Редактировать"
+            let editAction = UIAction(
+                title: "Редактировать",
+                image: UIImage(systemName: "pencil")
+            ) { [weak self] _ in
+                self?.editTracker(tracker)
+            }
+            
+            // 👇 Пункт "Удалить"
+            let deleteAction = UIAction(
+                title: "Удалить",
+                image: UIImage(systemName: "trash"),
+                attributes: .destructive
+            ) { [weak self] _ in
+                self?.showDeleteConfirmation(for: tracker)
+            }
+            
+            return UIMenu(children: [pinAction, editAction, deleteAction])
+        })
+    }
+}
 
-//#Preview {
-//    let vc = TabBarController()
-//    return vc
-//
-//}
+// MARK: - Actions with Trackers
+extension TrackersViewController {
+    
+    private func togglePin(for tracker: Tracker) {
+        do {
+            try store.togglePin(for: tracker.id)
+            
+            // Обновляем локальный кэш
+            if pinnedTrackers.contains(tracker.id) {
+                pinnedTrackers.remove(tracker.id)
+            } else {
+                pinnedTrackers.insert(tracker.id)
+            }
+            
+            // Перезагружаем данные для отображения в правильном порядке
+            loadInitialData()
+            
+        } catch {
+            print("❌ Ошибка при закреплении: \(error)")
+            showErrorAlert("Не удалось изменить статус закрепления")
+        }
+    }
+    
+    private func editTracker(_ tracker: Tracker) {
+        print("✏️ Редактирование трекера: \(tracker.name)")
+        print("📅 Расписание трекера: \(tracker.schedule.map { $0.rawValue })") // 👈 Отладка
+ 
+        let completedDaysCount = (try? recordStore.countRecords(for: tracker.id)) ?? 0
+        print("📊 Количество выполненных дней: \(completedDaysCount)")
+        
+        guard let categoryTitle = try? store.fetchCategoryForTracker(trackerId: tracker.id) else {
+            print("❌ Не удалось получить категорию трекера")
+            return
+        }
+        
+        let editVC = NewHabitViewController(
+            mode: .edit(tracker),
+            store: store,
+            completedDaysCount: completedDaysCount
+        )
+        editVC.onSave = { [weak self] updatedTracker, category in
+            self?.updateTracker(updatedTracker, category: category)
+        }
+        let navController = UINavigationController(rootViewController: editVC)
+        navController.modalPresentationStyle = .pageSheet
+        present(navController, animated: true)
+    }
+    
+    private func updateTracker(_ tracker: Tracker, category: String) {
+        do {
+            try store.updateTracker(newTracker: tracker, categoryTitle: category)
+            loadInitialData()
+        } catch {
+            print("❌ Ошибка при обновлении: \(error)")
+            showErrorAlert("Не удалось обновить трекер")
+        }
+    }
+    
+    private func showDeleteConfirmation(for tracker: Tracker) {
+        let alert = UIAlertController(
+            title: "Удалить трекер?",
+            message: nil,
+            preferredStyle: .actionSheet
+        )
+        
+        let deleteAction = UIAlertAction(title: "Удалить", style: .destructive) { [weak self] _ in
+            self?.deleteTracker(tracker)
+        }
+        
+        let cancelAction = UIAlertAction(title: "Отмена", style: .cancel)
+        
+        alert.addAction(deleteAction)
+        alert.addAction(cancelAction)
+        
+        present(alert, animated: true)
+    }
+    
+    private func deleteTracker(_ tracker: Tracker) {
+        do {
+            // Нужно добавить метод deleteTracker в протокол
+            try store.deleteTracker(id: tracker.id)
+            loadInitialData()
+        } catch {
+            print("❌ Ошибка при удалении: \(error)")
+            showErrorAlert("Не удалось удалить трекер")
+        }
+    }
+    
+    private func showErrorAlert(_ message: String) {
+        let alert = UIAlertController(
+            title: "Ошибка",
+            message: message,
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        present(alert, animated: true)
+    }
+}

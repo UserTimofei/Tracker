@@ -1,10 +1,3 @@
-//
-//  NewHabitViewController.swift
-//  Tracker
-//
-//  Created by Timofei Kirichenko on 27.01.2026.
-//
-
 import UIKit
 
 enum Section: Int, CaseIterable {
@@ -19,11 +12,48 @@ enum Section: Int, CaseIterable {
     }
 }
 
+enum HabitMode {
+    case create
+    case edit(Tracker)
+    
+    static func == (lhs: HabitMode, rhs: HabitMode) -> Bool {
+        switch (lhs, rhs) {
+        case (.create, .create):
+            return true
+        case (.edit(let lhsTracker), .edit(let rhsTracker)):
+            return lhsTracker.id == rhsTracker.id
+        default:
+            return false
+        }
+    }
+    
+    var buttonTitle: String {
+        switch self {
+        case .create:
+            return "Создать"
+        case .edit:
+            return "Сохранить"
+        }
+    }
+    
+    var navigationTitle: String {
+        switch self {
+        case .create:
+            return "Новая привычка"
+        case .edit:
+            return "Редактирование привычки"
+        }
+    }
+}
+
 class NewHabitViewController: UIViewController, UITextFieldDelegate {
     
     var onSave: ((Tracker, String) -> Void)?
+    private var mode: HabitMode
     private var selectedSchedule: Set<WeekDay> = []
     private var categoryTitleLabel: UILabel?
+    private var editingTracker: Tracker?
+    private var completedDaysCount: Int = 0
    
     private var categoryScheduleBlockTopWhenErrorHidden: NSLayoutConstraint!
     private var categoryScheduleBlockTopWhenErrorVisible: NSLayoutConstraint!
@@ -32,14 +62,54 @@ class NewHabitViewController: UIViewController, UITextFieldDelegate {
             return "Каждый день"
         } else {
             let sortedDays = selectedSchedule.sorted { $0.calendarWeekDay < $1.calendarWeekDay }
-            return sortedDays.map { $0.shortTitle }.joined(separator: ", ")
+            let shortTitles = sortedDays.map { $0.shortTitle }
+            print("📅 Дни для отображения: \(shortTitles)")
+            return shortTitles.joined(separator: ", ")
         }
     }
-    private let availableCategories = ["Полезные привычки", "Личностный рост", "Здоровье", "Учёба"]
-    private var selectedCategory: String = "Важное" // ← теперь по умолчанию "Важное"
     
+    private var selectedCategoryTitle: String = "Важное" {
+        didSet {
+            DispatchQueue.main.async {
+                self.updateCategoryButtonTitle()
+                print("🔄 Обновляем заголовок категории на: \(self.selectedCategoryTitle)")
+            }
+        }
+    }
+
     private let emojis: [String] = ["🙂", "😊", "😎", "😴", "😭", "😡", "🥶", "🤔", "🐶", "🐱", "🍕", "🏀", "✈️", "💻", "🎸", "⚽️"]
     private let colors: [UIColor] = [.appColorSelection1, .appColorSelection2, .appColorSelection3, .appColorSelection4, .appColorSelection5, .appColorSelection6, .appColorSelection7, .appColorSelection8, .appColorSelection9, .appColorSelection10, .appColorSelection11, .appColorSelection12, .appColorSelection13, .appColorSelection14, .appColorSelection15, .appColorSelection16, .appColorSelection17, .appColorSelection18]
+    
+    init(mode: HabitMode = .create, store: TrackerStoreProtocol? = nil, completedDaysCount: Int = 0) {
+        self.mode = mode
+        self.completedDaysCount = completedDaysCount
+        super.init(nibName: nil, bundle: nil)
+        
+        if case .edit(let tracker) = mode, let store = store {
+            self.editingTracker = tracker
+            self.selectedSchedule = tracker.schedule
+            print("📅 Инициализация с расписанием: \(tracker.schedule.map { $0.rawValue })")
+            print("📊 Передано дней для отображения: \(completedDaysCount)")
+            
+            if let categoryTitle = try? store.fetchCategoryForTracker(trackerId: tracker.id) {
+                self.selectedCategoryTitle = categoryTitle
+                print("📁 Категория трекера: \(categoryTitle)")
+            }
+        }
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    private lazy var completedDaysLabel: UILabel = {
+        let label = UILabel()
+        label.font = UIFont.systemFont(ofSize: 32, weight: .bold)
+        label.textColor = .appBlack
+        label.translatesAutoresizingMaskIntoConstraints = false
+        return label
+    }()
+    
     
     private lazy var emojiCollectionView: UICollectionView = {
         let layout = createCompositionalLayout()
@@ -204,14 +274,18 @@ class NewHabitViewController: UIViewController, UITextFieldDelegate {
         return view
     }()
     
-
     private lazy var createButton: UIButton = {
         let button = UIButton(type: .system)
         button.backgroundColor = .appGray
         button.layer.cornerRadius = 16
         button.clipsToBounds = true
         button.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .medium)
-        button.setTitle("Создать", for: .normal)
+        switch mode {
+           case .create:
+               button.setTitle("Создать", for: .normal)
+           case .edit:
+               button.setTitle("Сохранить", for: .normal)
+           }
         button.setTitleColor(.appWhite, for: .normal)
         button.contentHorizontalAlignment = .center
         button.addTarget(self, action: #selector(createButtonTapped), for: .touchUpInside)
@@ -238,14 +312,50 @@ class NewHabitViewController: UIViewController, UITextFieldDelegate {
  
     override func viewDidLoad() {
         super.viewDidLoad()
-        navigationItem.title = "Новая привычка"
+        switch mode {
+        case .create:
+            navigationItem.title = "Новая привычка"
+        case .edit:
+            navigationItem.title = "Редактирование привычки"
+        }
         view.backgroundColor = .appWhite
         emojiCollectionView.dataSource = self
         emojiCollectionView.delegate = self
         setupUI()
+        
+        if case .edit(let tracker) = mode {
+            fillData(with: tracker)
+        }
+        
         conditionCreateButton()
         updateCategoryButtonTitle()
         
+    }
+    
+    private func fillData(with tracker: Tracker) {
+        textField.text = tracker.name
+        
+        if completedDaysCount > 0 {
+            let word = TrackerCell.declinationOfDays(completedDaysCount)
+            completedDaysLabel.text = "\(completedDaysCount) \(word)"
+            print("✅ Отображаем дни: \(completedDaysCount) \(word)")
+        } else {
+            print("⚠️ completedDaysCount = 0, ничего не отображаем")
+        }
+        
+        selectedSchedule = tracker.schedule
+        print("📅 fillData: selectedSchedule = \(selectedSchedule.map { $0.rawValue })")
+
+        if let emojiIndex = emojis.firstIndex(of: tracker.emoji) {
+            selectedEmojiIndex = emojiIndex
+        }
+        
+        if let colorIndex = colors.firstIndex(where: { $0 == tracker.color }) {
+            selectedColorIndex = colorIndex
+        }
+ 
+        updateCategoryButtonTitle()
+        updateScheduleButtonTitle()
     }
     
     override func viewDidAppear(_ animated: Bool) {
@@ -265,8 +375,7 @@ class NewHabitViewController: UIViewController, UITextFieldDelegate {
         print("Расчетная высота контента: \(totalContentHeight)")
         print("scrollView bounds height: \(scrollView.bounds.height)")
         print("Нужен скролл: \(totalContentHeight > scrollView.bounds.height)")
-        
-        // Принудительно включаем скролл для теста
+
         scrollView.isScrollEnabled = true
         scrollView.alwaysBounceVertical = true
     }
@@ -287,6 +396,12 @@ class NewHabitViewController: UIViewController, UITextFieldDelegate {
  
         contentView.addSubview(textField)
         contentView.addSubview(errorLabel)
+        
+        if case .edit = mode {
+            contentView.addSubview(completedDaysLabel)
+            print("✅ Добавлен completedDaysLabel для режима редактирования")
+        }
+        
         categoryScheduleBlock.backgroundColor = .appBackground
         contentView.addSubview(categoryScheduleBlock)
         
@@ -307,23 +422,44 @@ class NewHabitViewController: UIViewController, UITextFieldDelegate {
         textField.rightViewMode = .always
         
         NSLayoutConstraint.activate([
-            textField.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 24),
-            textField.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
-            textField.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
-            textField.heightAnchor.constraint(equalToConstant: 75),
-            
-            errorLabel.topAnchor.constraint(equalTo: textField.bottomAnchor, constant: 8),
-            errorLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
-            errorLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
-            errorLabel.heightAnchor.constraint(equalToConstant: 20),
-            
-            categoryScheduleBlock.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
-            categoryScheduleBlock.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
-            categoryScheduleBlock.heightAnchor.constraint(equalToConstant: 150.5),
-            
-
-//            categoryScheduleBlock.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -20),
-            
+               errorLabel.topAnchor.constraint(equalTo: textField.bottomAnchor, constant: 8),
+               errorLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
+               errorLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
+               errorLabel.heightAnchor.constraint(equalToConstant: 20),
+           ])
+        
+        if case .edit = mode {
+            print("📌 Активируем констрейнты для режима редактирования")
+            NSLayoutConstraint.activate([
+                completedDaysLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 24),
+                completedDaysLabel.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
+                
+                textField.topAnchor.constraint(equalTo: completedDaysLabel.bottomAnchor, constant: 40),
+                textField.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
+                textField.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
+                textField.heightAnchor.constraint(equalToConstant: 75),
+                
+                categoryScheduleBlock.topAnchor.constraint(equalTo: textField.bottomAnchor, constant: 24),
+                categoryScheduleBlock.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
+                categoryScheduleBlock.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
+                categoryScheduleBlock.heightAnchor.constraint(equalToConstant: 150.5),
+            ])
+        } else {
+            print("📌 Активируем констрейнты для режима создания")
+            NSLayoutConstraint.activate([
+                textField.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 24),
+                textField.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
+                textField.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
+                textField.heightAnchor.constraint(equalToConstant: 75),
+                
+                categoryScheduleBlock.topAnchor.constraint(equalTo: textField.bottomAnchor, constant: 24),
+                categoryScheduleBlock.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
+                categoryScheduleBlock.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
+                categoryScheduleBlock.heightAnchor.constraint(equalToConstant: 150.5),
+            ])
+        }
+        
+        NSLayoutConstraint.activate([
             categoryButton.topAnchor.constraint(equalTo: categoryScheduleBlock.topAnchor),
             categoryButton.heightAnchor.constraint(equalToConstant: 75),
             categoryButton.leadingAnchor.constraint(equalTo: categoryScheduleBlock.leadingAnchor),
@@ -344,7 +480,9 @@ class NewHabitViewController: UIViewController, UITextFieldDelegate {
             emojiCollectionView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
             emojiCollectionView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
             emojiCollectionView.heightAnchor.constraint(equalToConstant: 550),
-            emojiCollectionView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -32)
+            emojiCollectionView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -32),
+            
+            
         ])
         
         NSLayoutConstraint.activate([
@@ -375,7 +513,14 @@ class NewHabitViewController: UIViewController, UITextFieldDelegate {
         categoryScheduleBlockTopWhenErrorHidden = categoryScheduleBlock.topAnchor.constraint(equalTo: textField.bottomAnchor, constant: 24)
         categoryScheduleBlockTopWhenErrorVisible = categoryScheduleBlock.topAnchor.constraint(equalTo: errorLabel.bottomAnchor, constant: 32)
         
-        categoryScheduleBlockTopWhenErrorHidden.isActive = true
+        if case .edit = mode {
+            categoryScheduleBlockTopWhenErrorHidden.isActive = false
+            categoryScheduleBlockTopWhenErrorVisible.isActive = false
+            print("🔽 Старые констрейнты деактивированы для режима редактирования")
+        } else {
+            categoryScheduleBlockTopWhenErrorHidden.isActive = true
+            print("🔽 Стандартный констрейнт активирован для режима создания")
+        }
     }
     
     private func createCompositionalLayout() -> UICollectionViewLayout {
@@ -460,27 +605,42 @@ class NewHabitViewController: UIViewController, UITextFieldDelegate {
     
     @objc private func addTapCategory() {
         
+        let categoryVC = CategoryViewController(selectedCategory: selectedCategoryTitle)
+        categoryVC.onCategorySelected = { [weak self] categoryTitle in
+            self?.selectedCategoryTitle = categoryTitle
+            print("✅ Выбрана категория: \(categoryTitle)")
+        }
+        
+        navigationController?.pushViewController(categoryVC, animated: true)
     }
+    
+    
     @objc private func createButtonTapped() {
         guard let name = textField.text,
               !name.isEmpty,
-        let emojiIndex = selectedEmojiIndex,
-        let colorIndex = selectedColorIndex else { return }
+              let emojiIndex = selectedEmojiIndex,
+              let colorIndex = selectedColorIndex else { return }
         
         print("📦 NewHabitVC: создаем трекер с расписанием: \(selectedSchedule.map { $0.rawValue })")
         
-        let category = selectedCategory ?? availableCategories.first
+        let trackerId: UUID
+        switch mode {
+        case .create:
+            trackerId = UUID()
+        case .edit(let tracker):
+            trackerId = tracker.id
+        }
         
         let newTracker = Tracker(
-            id: UUID(),
+            id: mode == .create ? UUID() : (editingTracker?.id ?? UUID()),
             name: name,
             color: colors[colorIndex],
             emoji: emojis[emojiIndex],
             schedule: selectedSchedule)
         
-        print("🚀 NewHabitVC: отправляем трекер в TrackersViewController")
+        print("🚀 NewHabitVC: отправляем трекер в TrackersViewController с категорией: \(selectedCategoryTitle)")
         
-        onSave?(newTracker, selectedCategory)
+        onSave?(newTracker, selectedCategoryTitle)
         
         dismiss(animated: true)
     }
@@ -502,6 +662,7 @@ class NewHabitViewController: UIViewController, UITextFieldDelegate {
     
     private func updateScheduleButtonTitle() {
         let displayText = scheduleDisplayText
+        print("📝 Обновление расписания: displayText = \(displayText)")
         
         let fullText = "Расписание\n\(displayText)"
         
@@ -528,15 +689,18 @@ class NewHabitViewController: UIViewController, UITextFieldDelegate {
             self.scheduleButton.titleLabel?.numberOfLines = 0
             self.scheduleButton.titleLabel?.lineBreakMode = .byWordWrapping
             self.scheduleButton.setAttributedTitle(attributed, for: .normal)
+            print("✅ Кнопка расписания обновлена: \(fullText)")
         }
     }
     
     private func updateCategoryButtonTitle() {
-        let titleText = selectedCategory ?? "Категория"
         
-        let fullTest = "Категория\n\(titleText)"
+        let titleText = selectedCategoryTitle
+        print("📝 updateCategoryButtonTitle вызван с titleText: \(titleText)")
         
-        let attributed = NSMutableAttributedString(string: fullTest)
+        let fullText = "Категория\n\(titleText)"
+        
+        let attributed = NSMutableAttributedString(string: fullText)
         
         let mainTitleAttributes: [NSAttributedString.Key: Any] = [
             .font: UIFont.systemFont(ofSize: 17, weight: .regular),
@@ -555,6 +719,7 @@ class NewHabitViewController: UIViewController, UITextFieldDelegate {
         
         attributed.setAttributes(mainTitleAttributes, range: mainTitleRange)
         attributed.setAttributes(categoryAttributes, range: categoryRange)
+        
         
         DispatchQueue.main.async {
                 self.categoryButton.titleLabel?.numberOfLines = 0
@@ -670,8 +835,6 @@ extension NewHabitViewController: UICollectionViewDelegate {
         conditionCreateButton()
     }
 }
-
-
 
 final class EmojiCell: UICollectionViewCell {
     static let reuseIdentifier = "EmojiCell"

@@ -1,21 +1,11 @@
-//
-//  SceneDelegate.swift
-//  Tracker
-//
-//  Created by Timofei Kirichenko on 13.01.2026.
-//
-
 import UIKit
-import CoreData
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
     var window: UIWindow?
 
-
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
-        
-        //1 scene
+
         guard let scene = (scene as? UIWindowScene) else { return }
         configureWindowScene(with: scene)
     }
@@ -23,9 +13,14 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     private func configureWindowScene(with scene: UIWindowScene) {
         let window = UIWindow(windowScene: scene)
         
-        let tabBarController = TabBarController()
+        let onboardingWasShown = UserDefaults.standard.bool(forKey: "onboardingWasShown")
         
-        window.rootViewController = tabBarController
+        if onboardingWasShown {
+            window.rootViewController = TabBarController()
+        } else {
+            window.rootViewController = OnboardingViewController()
+        }
+        
         window.makeKeyAndVisible()
         self.window = window
       

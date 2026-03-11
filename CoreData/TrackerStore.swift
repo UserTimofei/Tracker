@@ -1,9 +1,3 @@
-//
-//  TrackerStore.swift
-//  Tracker
-//
-//  Created by Timofei Kirichenko on 20.02.2026.
-//
 import UIKit
 import CoreData
 
@@ -19,6 +13,7 @@ final class TrackerStore: Store {
         static let emoji = "emoji"
         static let schedule = "schedule"
         static let category = "category"
+        static let isPinned = "isPinned"
     }
     
     private enum CategoryEntity {
@@ -55,7 +50,8 @@ final class TrackerStore: Store {
         color: UIColor,
         emoji: String,
         schedule: Set<WeekDay>,
-        category: TrackerCategoryCoreData
+        category: TrackerCategoryCoreData,
+        isPinned: Bool = false
     ) throws -> Tracker {
         let context = self.context
         let trackerObject = NSEntityDescription.insertNewObject(forEntityName: TrackerEntity.name, into: context)
@@ -68,6 +64,7 @@ final class TrackerStore: Store {
         trackerObject.setValue(schedule, forKey: TrackerEntity.schedule)
         
         trackerObject.setValue(category, forKey: TrackerEntity.category)
+        trackerObject.setValue(isPinned, forKey: TrackerEntity.isPinned)
         
         try saveContext()
         
@@ -106,6 +103,9 @@ final class TrackerStore: Store {
         else if let anyValue = object.value(forKey: TrackerEntity.schedule) {
             print("⚠️ Неизвестный тип schedule: \(type(of: anyValue)) = \(anyValue)")
         }
+        
+        let isPinned = object.value(forKey: TrackerEntity.isPinned) as? Bool ?? false
+        
         return Tracker(
             id: id,
             name: name,
@@ -114,6 +114,31 @@ final class TrackerStore: Store {
             schedule: schedule
         )
     }
+
+        func fetchAllPinnedTrackerIds() throws -> [UUID] {
+            let context = self.context
+            let request = NSFetchRequest<NSManagedObject>(entityName: TrackerEntity.name)
+            request.predicate = NSPredicate(format: "%K == true", TrackerEntity.isPinned)
+            
+            let objects = try context.fetch(request)
+            return objects.compactMap { $0.value(forKey: TrackerEntity.trackerId) as? UUID }
+        }
+
+        func togglePin(for trackerId: UUID) throws {
+            let context = self.context
+            let request = NSFetchRequest<NSManagedObject>(entityName: TrackerEntity.name)
+            request.predicate = NSPredicate(format: "%K == %@", TrackerEntity.trackerId, trackerId as CVarArg)
+            request.fetchLimit = 1
+            
+            guard let trackerObject = try context.fetch(request).first else {
+                throw StoreError.trackerNotFound
+            }
+            
+            let currentValue = trackerObject.value(forKey: TrackerEntity.isPinned) as? Bool ?? false
+            trackerObject.setValue(!currentValue, forKey: TrackerEntity.isPinned)
+            
+            try saveContext()
+        }
     
     func fetchTracker(by id: UUID) throws -> Tracker? {
         let context = self.context
@@ -186,8 +211,7 @@ final class TrackerStore: Store {
             }
             categoryEntity = newCategory
         }
-        
-        // 2. Создаём трекер
+
         let trackerEntity = TrackerCoreData(context: context)
         trackerEntity.trackerId = tracker.id
         trackerEntity.nameTracker = tracker.name
@@ -195,9 +219,24 @@ final class TrackerStore: Store {
         trackerEntity.emoji = tracker.emoji
         trackerEntity.setValue(tracker.schedule, forKey: "schedule")
         trackerEntity.category = categoryEntity
-        
-        // 3. Сохраняем
+        trackerEntity.setValue(false, forKey: TrackerEntity.isPinned)
+
         try saveContext()
+    }
+    
+    func fetchCategoryForTracker(trackerId: UUID) throws -> String? {
+        let context = self.context
+        let request = NSFetchRequest<NSManagedObject>(entityName: TrackerEntity.name)
+        request.predicate = NSPredicate(format: "%K == %@", TrackerEntity.trackerId, trackerId as CVarArg)
+        request.fetchLimit = 1
+        
+        guard let trackerObject = try context.fetch(request).first,
+              let category = trackerObject.value(forKey: TrackerEntity.category) as? NSManagedObject,
+              let categoryTitle = category.value(forKey: CategoryEntity.title) as? String else {
+            return nil
+        }
+        
+        return categoryTitle
     }
 }
 

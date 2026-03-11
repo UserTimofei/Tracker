@@ -8,6 +8,7 @@
     <entity name="TrackerCoreData" representedClassName="TrackerCoreData" syncable="YES" codeGenerationType="class">
         <attribute name="colorTracker" attributeType="Transformable" valueTransformerName="UIColorTransformer"/>
         <attribute name="emoji" optional="YES" attributeType="String"/>
+        <attribute name="isPinned" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
         <attribute name="nameTracker" optional="YES" attributeType="String"/>
         <attribute name="schedule" attributeType="Transformable" valueTransformerName="WeekdayScheduleTransformer"/>
         <attribute name="trackerId" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
