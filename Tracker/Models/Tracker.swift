@@ -19,37 +19,37 @@ enum WeekDay: Int, CaseIterable {
     
     var title: String {
         switch self {
-        case .monday: return "Понедельник"
-        case .tuesday: return "Вторник"
-        case .wednesday: return "Среда"
-        case .thursday: return "Четверг"
-        case .friday: return "Пятница"
-        case .saturday: return "Суббота"
-        case .sunday: return "Воскресенье"
+        case .monday: return NSLocalizedString("monday", comment: "Monday")
+        case .tuesday: return NSLocalizedString("tuesday", comment: "Tuesday")
+        case .wednesday: return NSLocalizedString("wednesday", comment: "Wednesday")
+        case .thursday: return NSLocalizedString("thursday", comment: "Thursday")
+        case .friday: return NSLocalizedString("friday", comment: "Friday")
+        case .saturday: return NSLocalizedString("saturday", comment: "Saturday")
+        case .sunday: return NSLocalizedString("sunday", comment: "Sunday")
         }
     }
     
     var shortTitle: String {
         switch self {
-        case .monday: return "Пн"
-        case .tuesday: return "Вт"
-        case .wednesday: return "Ср"
-        case .thursday: return "Чт"
-        case .friday: return "Пт"
-        case .saturday: return "Сб"
-        case .sunday: return "Вс"
+        case .monday: return NSLocalizedString("monday.short", comment: "Mon")
+        case .tuesday: return NSLocalizedString("tuesday.short", comment: "Tue")
+        case .wednesday: return NSLocalizedString("wednesday.short", comment: "Wed")
+        case .thursday: return NSLocalizedString("thursday.short", comment: "Thu")
+        case .friday: return NSLocalizedString("friday.short", comment: "Fri")
+        case .saturday: return NSLocalizedString("saturday.short", comment: "Sat")
+        case .sunday: return NSLocalizedString("sunday.short", comment: "Sun")
         }
     }
     
     var calendarWeekDay: Int {
-            switch self {
-            case .monday: return 2
-            case .tuesday: return 3
-            case .wednesday: return 4
-            case .thursday: return 5
-            case .friday: return 6
-            case .saturday: return 7
-            case .sunday: return 1
-            }
+        switch self {
+        case .monday: return 2
+        case .tuesday: return 3
+        case .wednesday: return 4
+        case .thursday: return 5
+        case .friday: return 6
+        case .saturday: return 7
+        case .sunday: return 1
         }
+    }
 }

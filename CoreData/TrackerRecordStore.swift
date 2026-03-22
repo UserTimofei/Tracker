@@ -51,7 +51,9 @@ final class TrackerRecordStore: Store{
         let recordEntity = TrackerRecordCoreData(context: context)
         recordEntity.trackerId = trackerId
         recordEntity.date = startOfDay
-   
+        
+        NotificationCenter.default.post(name: .trackerRecordsDidUpdate, object: nil)
+        
         try saveContext()
     
     }
@@ -73,6 +75,8 @@ final class TrackerRecordStore: Store{
         for record in records {
             context.delete(record)
         }
+        
+        NotificationCenter.default.post(name: .trackerRecordsDidUpdate, object: nil)
         
         try saveContext()
         }

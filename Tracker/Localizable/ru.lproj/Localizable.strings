@@ -1,0 +1,125 @@
+
+// MARK: - TrackersViewController
+"trackers.title" = "Трекеры";
+"trackers.search.placeholder" = "Поиск";
+"trackers.placeholder.title" = "Что будем отслеживать?";
+"trackers.filter.button" = "Фильтры";
+
+// MARK: - NewHabitViewController
+
+"newhabit.title" = "Новая привычка";
+"newhabit.edit.title" = "Редактирование привычки";
+"newhabit.textfield.placeholder" = "Введите название трекера";
+"newhabit.category" = "Категория";
+"newhabit.schedule" = "Расписание";
+"newhabit.emoji.section" = "Emoji";
+"newhabit.color.section" = "Цвет";
+"newhabit.create.button" = "Создать";
+"newhabit.save.button" = "Сохранить";
+"newhabit.cancel.button" = "Отменить";
+"newhabit.error.limit" = "Ограничение 38 символов";
+"newhabit.everyday" = "Каждый день";
+"common.done" = "Готово";
+
+// MARK: - ScheduleVC
+
+"schedule.title" = "Расписание";
+"schedule.done.button" = "Готово";
+
+// MARK: - WeekDays (полные названия)
+
+"monday" = "Понедельник";
+"tuesday" = "Вторник";
+"wednesday" = "Среда";
+"thursday" = "Четверг";
+"friday" = "Пятница";
+"saturday" = "Суббота";
+"sunday" = "Воскресенье";
+
+// MARK: - WeekDays (короткие названия)
+
+"monday.short" = "Пн";
+"tuesday.short" = "Вт";
+"wednesday.short" = "Ср";
+"thursday.short" = "Чт";
+"friday.short" = "Пт";
+"saturday.short" = "Сб";
+"sunday.short" = "Вс";
+
+// MARK: - Pinned section
+
+"pinned.section" = "Закрепленные";
+
+// MARK: - FilterViewController
+
+"filters.title" = "Фильтры";
+"filter.all" = "Все трекеры";
+"filter.today" = "Трекеры на сегодня";
+"filter.completed" = "Завершенные";
+"filter.uncompleted" = "Не завершенные";
+
+// MARK: - Context menu actions
+
+"tracker.pin" = "Закрепить";
+"tracker.unpin" = "Открепить";
+"tracker.edit" = "Редактировать";
+"tracker.delete" = "Удалить";
+
+// MARK: - Common
+
+"common.cancel" = "Отмена";
+"common.ok" = "OK";
+"common.delete" = "Удалить";
+"common.edit" = "Редактировать";
+
+// MARK: - Delete confirmation
+
+"delete.title" = "Удалить трекер?";
+
+// MARK: - Error messages
+
+"error.title" = "Ошибка";
+"error.pin" = "Не удалось изменить статус закрепления";
+"error.update" = "Не удалось обновить трекер";
+"error.delete" = "Не удалось удалить трекер";
+
+// MARK: - TabBar
+
+"tabbar.trackers" = "Трекеры";
+"tabbar.statistics" = "Статистика";
+
+// MARK: - NewCategoryViewController
+
+"newcategory.title" = "Новая категория";
+"newcategory.textfield.placeholder" = "Введите название категории";
+"newcategory.done.button" = "Готово";
+"common.done" = "Готово";
+
+// MARK: - EditCategoryViewController
+
+"editcategory.title" = "Редактирование категории";
+"editcategory.textfield.placeholder" = "Введите название категории";
+"editcategory.done.button" = "Готово";
+
+// MARK: - CategoryViewController
+
+"category.title" = "Категория";
+"category.placeholder" = "Привычки и события можно\nобъединить по смыслу";
+"category.add.button" = "Добавить категорию";
+"category.delete.title" = "Удалить категорию?";
+
+// MARK: - StatisticsViewController
+
+"statistics.empty.title" = "Анализировать пока нечего";
+"statistics.best_period" = "Лучший период";
+"statistics.perfect_days" = "Идеальные дни";
+"statistics.completed_trackers" = "Трекеров завершено";
+"statistics.average_value" = "Среднее значение";
+
+// MARK: - Category (дефолтная категория)
+
+"category.default" = "Важное";
+
+// MARK: - Empty Filter State
+
+"trackers.empty_filter.title" = "Ничего не найдено";

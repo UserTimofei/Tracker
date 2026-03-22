@@ -1,0 +1,60 @@
+{
+  "originHash" : "9c3e0a40273fa88fd99c2729e403f9a2b03e3048b7e4e0e96432c184c2c4455d",
+  "pins" : [
+    {
+      "identity" : "appmetrica-sdk-ios",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/appmetrica/appmetrica-sdk-ios",
+      "state" : {
+        "revision" : "15e5e78ba408c2fa2d60b700b10437a407ad7440",
+        "version" : "6.1.0"
+      }
+    },
+    {
+      "identity" : "kscrash",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/kstenerud/KSCrash",
+      "state" : {
+        "revision" : "c0177658fc771ae833b6d3b8f5f3f5a14d59ec03",
+        "version" : "2.1.2"
+      }
+    },
+    {
+      "identity" : "swift-custom-dump",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/pointfreeco/swift-custom-dump",
+      "state" : {
+        "revision" : "06c57924455064182d6b217f06ebc05d00cb2990",
+        "version" : "1.5.0"
+      }
+    },
+    {
+      "identity" : "swift-snapshot-testing",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/pointfreeco/swift-snapshot-testing",
+      "state" : {
+        "revision" : "05b6f05b55ff9e2dcdcc21ac78c6ba81ea624791",
+        "version" : "1.19.1"
+      }
+    },
+    {
+      "identity" : "swift-syntax",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/swiftlang/swift-syntax",
+      "state" : {
+        "revision" : "4799286537280063c85a32f09884cfbca301b1a1",
+        "version" : "602.0.0"
+      }
+    },
+    {
+      "identity" : "xctest-dynamic-overlay",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/pointfreeco/xctest-dynamic-overlay",
+      "state" : {
+        "revision" : "dfd70507def84cb5fb821278448a262c6ff2bbad",
+        "version" : "1.9.0"
+      }
+    }
+  ],
+  "version" : 3
+}
