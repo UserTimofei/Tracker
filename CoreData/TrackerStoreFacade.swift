@@ -1,10 +1,3 @@
-//
-//  TrackerStoreFacade.swift
-//  Tracker
-//
-//  Created by Timofei Kirichenko on 27.02.2026.
-//
-
 import Foundation
 
 final class TrackerStoreFacade: TrackerStoreProtocol {
@@ -40,6 +33,7 @@ final class TrackerStoreFacade: TrackerStoreProtocol {
         trackerEntity.emoji = tracker.emoji
         trackerEntity.setValue(tracker.schedule, forKey: "schedule")
         trackerEntity.category = categoryEntity
+        trackerEntity.setValue(false, forKey: "isPinned")
         
         try trackerStore.saveContext()
     }
@@ -52,6 +46,30 @@ final class TrackerStoreFacade: TrackerStoreProtocol {
         }
     }
     
+    func togglePin(for trackerId: UUID) throws {
+        try trackerStore.togglePin(for: trackerId)
+    }
     
+    func fetchAllPinnedTrackerIds() throws -> [UUID] {
+        return try trackerStore.fetchAllPinnedTrackerIds()
+    }
+    
+    func deleteTracker(id: UUID) throws {
+        try trackerStore.deleteTracker(id: id)
+    }
+    
+    func updateTracker(newTracker: Tracker, categoryTitle: String?) throws {
+        var categoryEntity: TrackerCategoryCoreData? = nil
+        if let categoryTitle = categoryTitle {
+            categoryEntity = try categoryStore.fetchCategoryCoreData(by: categoryTitle)
+        }
+        
+        try trackerStore.updateTracker(newTracker: newTracker, category: categoryEntity)
+    }
+    
+    func fetchCategoryForTracker(trackerId: UUID) throws -> String? {
+            return try trackerStore.fetchCategoryForTracker(trackerId: trackerId)
+        }
 }
+    
 

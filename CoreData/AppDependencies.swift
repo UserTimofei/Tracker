@@ -1,10 +1,3 @@
-//
-//  AppDependencies.swift
-//  Tracker
-//
-//  Created by Timofei Kirichenko on 27.02.2026.
-//
-
 import UIKit
 import CoreData
 

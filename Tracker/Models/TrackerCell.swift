@@ -1,9 +1,3 @@
-//
-//  TrackerCell.swift
-//  Tracker
-//
-//  Created by Timofei Kirichenko on 24.01.2026.
-//
 import UIKit
 
 final class TrackerCell: UICollectionViewCell {
@@ -78,6 +72,16 @@ final class TrackerCell: UICollectionViewCell {
         return button
     }()
     
+    private lazy var pinImageView: UIImageView = {
+        let imageView = UIImageView()
+        imageView.image = UIImage(systemName: "pin.fill")
+        imageView.tintColor = .appWhite
+        imageView.isHidden = true
+        imageView.contentMode = .scaleAspectFit
+        imageView.translatesAutoresizingMaskIntoConstraints = false
+        return imageView
+    }()
+    
     private var tracker: Tracker?
     private var isCompleted = false
     private var completionCount = 0
@@ -98,6 +102,7 @@ final class TrackerCell: UICollectionViewCell {
     private func setupUI() {
         contentView.backgroundColor = .clear
         emojiLabelBackgroundView.addSubview(emojiLabel)
+        contentView.addSubview(pinImageView)
         
         NSLayoutConstraint.activate([
             emojiLabelBackgroundView.widthAnchor.constraint(equalToConstant: 24),
@@ -142,6 +147,8 @@ final class TrackerCell: UICollectionViewCell {
         contentView.addSubview(coloredContainer)
         contentView.addSubview(buttonContainer)
         
+        contentView.bringSubviewToFront(pinImageView)
+        
         NSLayoutConstraint.activate([
             coloredContainer.topAnchor.constraint(equalTo: contentView.topAnchor),
             coloredContainer.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
@@ -161,7 +168,12 @@ final class TrackerCell: UICollectionViewCell {
             buttonStack.topAnchor.constraint(equalTo: buttonContainer.topAnchor),
             buttonStack.bottomAnchor.constraint(equalTo: buttonContainer.bottomAnchor),
             buttonStack.leadingAnchor.constraint(equalTo: buttonContainer.leadingAnchor),
-            buttonStack.trailingAnchor.constraint(equalTo: buttonContainer.trailingAnchor)
+            buttonStack.trailingAnchor.constraint(equalTo: buttonContainer.trailingAnchor),
+            
+            pinImageView.topAnchor.constraint(equalTo: coloredContainer.topAnchor, constant: 18),
+            pinImageView.trailingAnchor.constraint(equalTo: coloredContainer.trailingAnchor, constant: -12),
+            pinImageView.widthAnchor.constraint(equalToConstant: 16),
+            pinImageView.heightAnchor.constraint(equalToConstant: 24)
             ])
     }
     
@@ -176,6 +188,7 @@ final class TrackerCell: UICollectionViewCell {
     
     func configure(
         with tracker: Tracker,
+        isPinned: Bool,
         isCompleted: Bool,
         isFutureDate: Bool,
         numbersOfCompletedTrackers: Int,
@@ -187,15 +200,16 @@ final class TrackerCell: UICollectionViewCell {
             self.onToggle = onToggle
             
             print("🔧 TrackerCell.configure для \(tracker.name)")
-               print("   onToggle есть: \(onToggle != nil ? "✅" : "❌")")
-                    
+            print("   onToggle есть: \(onToggle != nil ? "✅" : "❌")")
+            print("   isPinned: \(isPinned)")
+            
             let color = tracker.color
             coloredContainer.backgroundColor = color
             
             completeButton.backgroundColor = color
             completeButton.tintColor = .white
             
-            let word = declinationOfDays(numbersOfCompletedTrackers)
+            let word = Self.declinationOfDays(numbersOfCompletedTrackers)
             counterLabel.text = "\(numbersOfCompletedTrackers) \(word)"
             
             emojiLabel.text = tracker.emoji
@@ -208,16 +222,23 @@ final class TrackerCell: UICollectionViewCell {
             } else {
                 completeButton.alpha = isCompleted ? 0.6 : 1.0
             }
-    }
+            
+            pinImageView.isHidden = !isPinned
+            pinImageView.tintColor = .white
+            pinImageView.backgroundColor = .clear
+            
+            print("   pinImageView.isHidden: \(pinImageView.isHidden)")
+            print("   pinImageView.image: \(pinImageView.image)")
+        }
     
     func updateCounter(_ newCount: Int) {
         completionCount = newCount
-        let word = declinationOfDays(newCount)
+        let word = Self.declinationOfDays(newCount)
         counterLabel.text = "\(newCount) \(word)"
     }
     
     
-    private func declinationOfDays(_ count: Int) -> String {
+    static func declinationOfDays(_ count: Int) -> String {
         
         let lastTwoDigits = count % 100
         

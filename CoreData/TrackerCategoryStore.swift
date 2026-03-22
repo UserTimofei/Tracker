@@ -1,9 +1,3 @@
-//
-//  TrackerCategoryStore.swift
-//  Tracker
-//
-//  Created by Timofei Kirichenko on 20.02.2026.
-//
 import UIKit
 import CoreData
 
@@ -46,6 +40,15 @@ final class TrackerCategoryStore: Store {
     }
     
     func createCategory(title: String) throws -> TrackerCategory {
+        
+        let fetchRequest: NSFetchRequest<TrackerCategoryCoreData> = TrackerCategoryCoreData.fetchRequest()
+        fetchRequest.predicate = NSPredicate(format: "title ==[c] %@", title)
+        
+        let existingCategories = try context.fetch(fetchRequest)
+        if !existingCategories.isEmpty {
+            throw StoreError.categoryAlreadyExists
+        }
+        
         let categoryEntity = TrackerCategoryCoreData(context: context)
         
         categoryEntity.idCategory = UUID()
