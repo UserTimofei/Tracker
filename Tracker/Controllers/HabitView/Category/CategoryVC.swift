@@ -1,6 +1,13 @@
+//
+//  CategoryViewController.swift
+//  Tracker
+//
+//  Created by Timofei Kirichenko
+//
 
 import UIKit
 
+// MARK: - CategoryViewController
 final class CategoryViewController: UIViewController {
     
     // MARK: - Properties
@@ -17,23 +24,17 @@ final class CategoryViewController: UIViewController {
         tableView.register(CategoryCell.self, forCellReuseIdentifier: CategoryCell.reuseIdentifier)
         tableView.delegate = self
         tableView.dataSource = self
-        
         tableView.layer.cornerRadius = 16
-        tableView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner, .layerMinXMaxYCorner, .layerMaxXMaxYCorner]
+        tableView.layer.maskedCorners = [
+            .layerMinXMinYCorner,
+            .layerMaxXMinYCorner,
+            .layerMinXMaxYCorner,
+            .layerMaxXMaxYCorner
+        ]
         tableView.clipsToBounds = true
-        
         return tableView
     }()
-    
-    private lazy var tableViewContainer: UIView = {
-        let view = UIView()
-        view.backgroundColor = .appBackground
-        view.layer.cornerRadius = 16
-        view.clipsToBounds = true
-        view.translatesAutoresizingMaskIntoConstraints = false
-        return view
-    }()
-    
+
     private lazy var placeholderView: UIView = {
         let container = UIView()
         container.translatesAutoresizingMaskIntoConstraints = false
@@ -51,7 +52,7 @@ final class CategoryViewController: UIViewController {
         starImage.heightAnchor.constraint(equalToConstant: 80).isActive = true
         
         let label = UILabel()
-        label.text = "Привычки и события можно\nобъединить по смыслу"
+        label.text = NSLocalizedString("category.placeholder", comment: "Categories placeholder text")
         label.numberOfLines = 0
         label.font = UIFont.systemFont(ofSize: 12, weight: .medium)
         label.textColor = .appBlack
@@ -71,7 +72,7 @@ final class CategoryViewController: UIViewController {
     
     private lazy var addButton: UIButton = {
         let button = UIButton(type: .system)
-        button.setTitle("Добавить категорию", for: .normal)
+        button.setTitle(NSLocalizedString("category.add.button", comment: "Add category button"), for: .normal)
         button.backgroundColor = .appBlack
         button.setTitleColor(.appWhite, for: .normal)
         button.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .medium)
@@ -81,7 +82,7 @@ final class CategoryViewController: UIViewController {
         return button
     }()
     
-    // MARK: - Init
+    // MARK: - Initialization
     init(selectedCategory: String? = nil) {
         self.viewModel = CategoryViewModel(selectedCategoryTitle: selectedCategory)
         super.init(nibName: nil, bundle: nil)
@@ -97,13 +98,12 @@ final class CategoryViewController: UIViewController {
         setupUI()
         setupBindings()
         viewModel.loadCategories()
-        
         navigationItem.hidesBackButton = true
     }
     
-    // MARK: - Setup
+    // MARK: - Setup Methods
     private func setupUI() {
-        title = "Категория"
+        title = NSLocalizedString("category.title", comment: "Category screen title")
         view.backgroundColor = .appWhite
         
         view.addSubview(tableView)
@@ -175,9 +175,17 @@ final class CategoryViewController: UIViewController {
         navigationController?.pushViewController(newCategoryVC, animated: true)
     }
     
+    // MARK: - Helper Methods
     private func showErrorAlert(_ message: String) {
-        let alert = UIAlertController(title: "Ошибка", message: message, preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        let alert = UIAlertController(
+            title: NSLocalizedString("error.title", comment: "Error alert title"),
+            message: message,
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(
+            title: NSLocalizedString("common.ok", comment: "OK"),
+            style: .default
+        ))
         present(alert, animated: true)
     }
     
@@ -193,42 +201,49 @@ final class CategoryViewController: UIViewController {
     
     private func showDeleteConfirmation(at index: Int) {
         let alertController = UIAlertController(
-            title: "Удалить категорию?",
+            title: NSLocalizedString("category.delete.title", comment: "Delete category confirmation title"),
             message: nil,
             preferredStyle: .actionSheet
         )
         
-        let deleteAction = UIAlertAction(title: "Удалить", style: .destructive) { [weak self] _ in
+        let deleteAction = UIAlertAction(
+            title: NSLocalizedString("common.delete", comment: "Delete"),
+            style: .destructive
+        ) { [weak self] _ in
             self?.viewModel.deleteCategory(at: index)
         }
         
-        let cancelAction = UIAlertAction(title: "Отмена", style: .cancel)
+        let cancelAction = UIAlertAction(
+            title: NSLocalizedString("common.cancel", comment: "Cancel"),
+            style: .cancel
+        )
         
         alertController.addAction(deleteAction)
         alertController.addAction(cancelAction)
-        
         present(alertController, animated: true)
     }
 }
 
-// MARK: - UITableViewDataSource & Delegate
+// MARK: - UITableViewDataSource & UITableViewDelegate
 extension CategoryViewController: UITableViewDataSource, UITableViewDelegate {
+    
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return viewModel.numberOfCategories
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        guard let cell = tableView.dequeueReusableCell(withIdentifier: CategoryCell.reuseIdentifier, for: indexPath) as? CategoryCell else {
+        guard let cell = tableView.dequeueReusableCell(
+            withIdentifier: CategoryCell.reuseIdentifier,
+            for: indexPath
+        ) as? CategoryCell else {
             return UITableViewCell()
         }
         
         let title = viewModel.categoryTitle(at: indexPath.row) ?? ""
         let isSelected = viewModel.isCategorySelected(at: indexPath.row)
-        
-        print("📝 Ячейка: \(title), выбрана: \(isSelected)")
-        
         let isLast = indexPath.row == viewModel.numberOfCategories - 1
         
+        print("📝 Ячейка: \(title), выбрана: \(isSelected)")
         cell.configure(with: title, isSelected: isSelected, isLast: isLast)
         
         return cell
@@ -245,14 +260,14 @@ extension CategoryViewController: UITableViewDataSource, UITableViewDelegate {
     func tableView(_ tableView: UITableView, contextMenuConfigurationForRowAt indexPath: IndexPath, point: CGPoint) -> UIContextMenuConfiguration? {
         return UIContextMenuConfiguration(actionProvider: { _ in
             let editAction = UIAction(
-                title: "Редактировать",
+                title: NSLocalizedString("common.edit", comment: "Edit"),
                 image: UIImage(systemName: "pencil")
             ) { [weak self] _ in
                 self?.showEditCategoryScreen(at: indexPath.row)
             }
             
             let deleteAction = UIAction(
-                title: "Удалить",
+                title: NSLocalizedString("common.delete", comment: "Delete"),
                 image: UIImage(systemName: "trash"),
                 attributes: .destructive
             ) { [weak self] _ in

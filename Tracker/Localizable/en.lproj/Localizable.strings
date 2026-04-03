@@ -1,0 +1,124 @@
+
+// MARK: - TrackersViewController
+"trackers.title" = "Trackers";
+"trackers.search.placeholder" = "Search";
+"trackers.placeholder.title" = "What will we track?";
+"trackers.filter.button" = "Filters";
+
+// MARK: - NewHabitViewController
+
+"newhabit.title" = "New Habit";
+"newhabit.edit.title" = "Edit Habit";
+"newhabit.textfield.placeholder" = "Enter tracker name";
+"newhabit.category" = "Category";
+"newhabit.schedule" = "Schedule";
+"newhabit.emoji.section" = "Emoji";
+"newhabit.color.section" = "Color";
+"newhabit.create.button" = "Create";
+"newhabit.save.button" = "Save";
+"newhabit.cancel.button" = "Cancel";
+"newhabit.error.limit" = "Limit 38 characters";
+"newhabit.everyday" = "Every day";
+"common.done" = "Done";
+
+// MARK: - ScheduleVC
+
+"schedule.title" = "Schedule";
+"schedule.done.button" = "Done";
+
+// MARK: - WeekDays (full names)
+
+"monday" = "Monday";
+"tuesday" = "Tuesday";
+"wednesday" = "Wednesday";
+"thursday" = "Thursday";
+"friday" = "Friday";
+"saturday" = "Saturday";
+"sunday" = "Sunday";
+
+// MARK: - WeekDays (short names)
+
+"monday.short" = "Mon";
+"tuesday.short" = "Tue";
+"wednesday.short" = "Wed";
+"thursday.short" = "Thu";
+"friday.short" = "Fri";
+"saturday.short" = "Sat";
+"sunday.short" = "Sun";
+
+// MARK: - Pinned section
+
+"pinned.section" = "Pinned";
+
+// MARK: - FilterViewController
+
+"filters.title" = "Filters";
+"filter.all" = "All trackers";
+"filter.today" = "Trackers for today";
+"filter.completed" = "Completed";
+"filter.uncompleted" = "Not completed";
+
+// MARK: - Context menu actions
+
+"tracker.pin" = "Pin";
+"tracker.unpin" = "Unpin";
+"tracker.edit" = "Edit";
+"tracker.delete" = "Delete";
+
+// MARK: - Common
+
+"common.cancel" = "Cancel";
+"common.ok" = "OK";
+"common.delete" = "Delete";
+"common.edit" = "Edit";
+
+// MARK: - Delete confirmation
+
+"delete.title" = "Delete tracker?";
+
+// MARK: - Error messages
+
+"error.title" = "Error";
+"error.pin" = "Failed to change pin status";
+"error.update" = "Failed to update tracker";
+"error.delete" = "Failed to delete tracker";
+
+// MARK: - TabBar
+
+"tabbar.trackers" = "Trackers";
+"tabbar.statistics" = "Statistics";
+
+// MARK: - NewCategoryViewController
+
+"newcategory.title" = "New Category";
+"newcategory.textfield.placeholder" = "Enter category name";
+"newcategory.done.button" = "Done";
+"common.done" = "Done";
+
+// MARK: - EditCategoryViewController
+
+"editcategory.title" = "Edit Category";
+"editcategory.textfield.placeholder" = "Enter category name";
+"editcategory.done.button" = "Done";
+
+// MARK: - CategoryViewController
+
+"category.title" = "Category";
+"category.placeholder" = "Habits and events can be\ncombined by meaning";
+"category.add.button" = "Add category";
+"category.delete.title" = "Delete category?";
+
+// MARK: - StatisticsViewController
+
+"statistics.empty.title" = "Nothing to analyze yet";
+"statistics.best_period" = "Best period";
+"statistics.perfect_days" = "Perfect days";
+"statistics.completed_trackers" = "Trackers completed";
+"statistics.average_value" = "Average value";
+
+// MARK: - Category (default category)
+
+"category.default" = "Important";
+
+// MARK: - Empty Filter State
+"trackers.empty_filter.title" = "Nothing found";

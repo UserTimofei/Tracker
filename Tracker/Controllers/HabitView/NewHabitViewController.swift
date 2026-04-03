@@ -1,53 +1,9 @@
 import UIKit
 
-enum Section: Int, CaseIterable {
-    case emoji
-    case color
+// MARK: - NewHabitViewController
+final class NewHabitViewController: UIViewController, UITextFieldDelegate {
     
-    var title: String {
-        switch self {
-        case .emoji: return "Emoji"
-        case .color: return "Цвет"
-        }
-    }
-}
-
-enum HabitMode {
-    case create
-    case edit(Tracker)
-    
-    static func == (lhs: HabitMode, rhs: HabitMode) -> Bool {
-        switch (lhs, rhs) {
-        case (.create, .create):
-            return true
-        case (.edit(let lhsTracker), .edit(let rhsTracker)):
-            return lhsTracker.id == rhsTracker.id
-        default:
-            return false
-        }
-    }
-    
-    var buttonTitle: String {
-        switch self {
-        case .create:
-            return "Создать"
-        case .edit:
-            return "Сохранить"
-        }
-    }
-    
-    var navigationTitle: String {
-        switch self {
-        case .create:
-            return "Новая привычка"
-        case .edit:
-            return "Редактирование привычки"
-        }
-    }
-}
-
-class NewHabitViewController: UIViewController, UITextFieldDelegate {
-    
+    // MARK: - Properties
     var onSave: ((Tracker, String) -> Void)?
     private var mode: HabitMode
     private var selectedSchedule: Set<WeekDay> = []
@@ -57,9 +13,10 @@ class NewHabitViewController: UIViewController, UITextFieldDelegate {
    
     private var categoryScheduleBlockTopWhenErrorHidden: NSLayoutConstraint!
     private var categoryScheduleBlockTopWhenErrorVisible: NSLayoutConstraint!
+    
     private var scheduleDisplayText: String {
         if selectedSchedule.count == WeekDay.allCases.count {
-            return "Каждый день"
+            return NSLocalizedString("newhabit.everyday", comment: "Every day text")
         } else {
             let sortedDays = selectedSchedule.sorted { $0.calendarWeekDay < $1.calendarWeekDay }
             let shortTitles = sortedDays.map { $0.shortTitle }
@@ -68,7 +25,7 @@ class NewHabitViewController: UIViewController, UITextFieldDelegate {
         }
     }
     
-    private var selectedCategoryTitle: String = "Важное" {
+    private var selectedCategoryTitle: String = NSLocalizedString("category.default", comment: "Default category") {
         didSet {
             DispatchQueue.main.async {
                 self.updateCategoryButtonTitle()
@@ -77,24 +34,24 @@ class NewHabitViewController: UIViewController, UITextFieldDelegate {
         }
     }
 
+    // MARK: - Constants
     private let emojis: [String] = ["🙂", "😊", "😎", "😴", "😭", "😡", "🥶", "🤔", "🐶", "🐱", "🍕", "🏀", "✈️", "💻", "🎸", "⚽️"]
-    private let colors: [UIColor] = [.appColorSelection1, .appColorSelection2, .appColorSelection3, .appColorSelection4, .appColorSelection5, .appColorSelection6, .appColorSelection7, .appColorSelection8, .appColorSelection9, .appColorSelection10, .appColorSelection11, .appColorSelection12, .appColorSelection13, .appColorSelection14, .appColorSelection15, .appColorSelection16, .appColorSelection17, .appColorSelection18]
+    private let colors: [UIColor] = (1...18).compactMap { index -> UIColor? in
+        return UIColor(named: "appColorSelection\(index)")
+    }
     
+    // MARK: - Selection Properties
+    private var selectedEmojiIndex: Int? = nil
+    private var selectedColorIndex: Int? = nil
+    
+    // MARK: - Initialization
     init(mode: HabitMode = .create, store: TrackerStoreProtocol? = nil, completedDaysCount: Int = 0) {
         self.mode = mode
         self.completedDaysCount = completedDaysCount
         super.init(nibName: nil, bundle: nil)
-        
+
         if case .edit(let tracker) = mode, let store = store {
-            self.editingTracker = tracker
-            self.selectedSchedule = tracker.schedule
-            print("📅 Инициализация с расписанием: \(tracker.schedule.map { $0.rawValue })")
-            print("📊 Передано дней для отображения: \(completedDaysCount)")
-            
-            if let categoryTitle = try? store.fetchCategoryForTracker(trackerId: tracker.id) {
-                self.selectedCategoryTitle = categoryTitle
-                print("📁 Категория трекера: \(categoryTitle)")
-            }
+            configureEditMode(with: tracker, store: store)
         }
     }
     
@@ -102,6 +59,20 @@ class NewHabitViewController: UIViewController, UITextFieldDelegate {
         fatalError("init(coder:) has not been implemented")
     }
     
+    // MARK: - Private Helpers
+    private func configureEditMode(with tracker: Tracker, store: TrackerStoreProtocol) {
+        self.editingTracker = tracker
+        self.selectedSchedule = tracker.schedule
+        print("📅 Инициализация с расписанием: \(tracker.schedule.map { $0.rawValue })")
+        print("📊 Передано дней для отображения: \(completedDaysCount)")
+        
+        if let categoryTitle = try? store.fetchCategoryForTracker(trackerId: tracker.id) {
+            self.selectedCategoryTitle = categoryTitle
+            print("📁 Категория трекера: \(categoryTitle)")
+        }
+    }
+    
+    // MARK: - UI Elements
     private lazy var completedDaysLabel: UILabel = {
         let label = UILabel()
         label.font = UIFont.systemFont(ofSize: 32, weight: .bold)
@@ -109,8 +80,7 @@ class NewHabitViewController: UIViewController, UITextFieldDelegate {
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
     }()
-    
-    
+
     private lazy var emojiCollectionView: UICollectionView = {
         let layout = createCompositionalLayout()
         let collection = UICollectionView(frame: .zero, collectionViewLayout: layout)
@@ -128,12 +98,9 @@ class NewHabitViewController: UIViewController, UITextFieldDelegate {
         return collection
     }()
     
-    private var selectedEmojiIndex: Int? = nil
-    private var selectedColorIndex: Int? = nil
-    
     private lazy var textField: UITextField = {
         let text = UITextField()
-        text.placeholder = "Введите название трекера"
+        text.placeholder = NSLocalizedString("newhabit.textfield.placeholder", comment: "Tracker name placeholder")
         text.font = UIFont.systemFont(ofSize: 17, weight: .regular)
         text.borderStyle = .none
         text.layer.cornerRadius = 16
@@ -158,7 +125,7 @@ class NewHabitViewController: UIViewController, UITextFieldDelegate {
         )
         
         let cancel = UIBarButtonItem(
-            title: "Отмена",
+            title: NSLocalizedString("common.done", comment: "Done"),
             style: .plain,
             target: self,
             action: #selector(dismissKeyboard)
@@ -170,7 +137,7 @@ class NewHabitViewController: UIViewController, UITextFieldDelegate {
     
     private let errorLabel: UILabel = {
         let label = UILabel()
-        label.text = "Ограничение 38 символов"
+        label.text = NSLocalizedString("newhabit.error.limit", comment: "Error message for text limit")
         label.font = UIFont.systemFont(ofSize: 17, weight: .regular)
         label.textColor = .appRed
         label.textAlignment = .center
@@ -195,7 +162,7 @@ class NewHabitViewController: UIViewController, UITextFieldDelegate {
         button.layer.cornerRadius = 16
         button.clipsToBounds = true
         button.titleLabel?.font = UIFont.systemFont(ofSize: 17, weight: .regular)
-        button.setTitle("Категория", for: .normal)
+        button.setTitle(NSLocalizedString("newhabit.category", comment: "Category button"), for: .normal)
         button.setTitleColor(.appBlack, for: .normal)
         button.contentHorizontalAlignment = .left
         button.titleEdgeInsets = UIEdgeInsets(top: 0, left: 16, bottom: 0, right: 32)
@@ -226,7 +193,7 @@ class NewHabitViewController: UIViewController, UITextFieldDelegate {
         button.layer.cornerRadius = 16
         button.clipsToBounds = true
         button.titleLabel?.font = UIFont.systemFont(ofSize: 17, weight: .regular)
-        button.setTitle("Расписание", for: .normal)
+        button.setTitle(NSLocalizedString("newhabit.schedule", comment: "Schedule button"), for: .normal)
         button.setTitleColor(.appBlack, for: .normal)
         button.contentHorizontalAlignment = .left
         button.titleLabel?.numberOfLines = 0
@@ -274,18 +241,22 @@ class NewHabitViewController: UIViewController, UITextFieldDelegate {
         return view
     }()
     
+    private lazy var stackBottomButton: UIStackView = {
+        let stackBottomButton = UIStackView()
+        stackBottomButton.axis = .horizontal
+        stackBottomButton.spacing = 8
+        stackBottomButton.distribution = .fillEqually
+        stackBottomButton.translatesAutoresizingMaskIntoConstraints = false
+        return stackBottomButton
+    }()
+    
     private lazy var createButton: UIButton = {
         let button = UIButton(type: .system)
         button.backgroundColor = .appGray
         button.layer.cornerRadius = 16
         button.clipsToBounds = true
         button.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .medium)
-        switch mode {
-           case .create:
-               button.setTitle("Создать", for: .normal)
-           case .edit:
-               button.setTitle("Сохранить", for: .normal)
-           }
+        button.setTitle(mode.buttonTitle, for: .normal)
         button.setTitleColor(.appWhite, for: .normal)
         button.contentHorizontalAlignment = .center
         button.addTarget(self, action: #selector(createButtonTapped), for: .touchUpInside)
@@ -302,7 +273,7 @@ class NewHabitViewController: UIViewController, UITextFieldDelegate {
         button.layer.borderWidth = 1.0
         button.clipsToBounds = true
         button.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .medium)
-        button.setTitle("Отменить", for: .normal)
+        button.setTitle(NSLocalizedString("newhabit.cancel.button", comment: "Cancel button"), for: .normal)
         button.setTitleColor(.appRed, for: .normal)
         button.contentHorizontalAlignment = .center
         button.translatesAutoresizingMaskIntoConstraints = false
@@ -310,14 +281,12 @@ class NewHabitViewController: UIViewController, UITextFieldDelegate {
         return button
     }()
  
+    // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
-        switch mode {
-        case .create:
-            navigationItem.title = "Новая привычка"
-        case .edit:
-            navigationItem.title = "Редактирование привычки"
-        }
+       
+        navigationItem.title = mode.navigationTitle
+        
         view.backgroundColor = .appWhite
         emojiCollectionView.dataSource = self
         emojiCollectionView.delegate = self
@@ -332,6 +301,29 @@ class NewHabitViewController: UIViewController, UITextFieldDelegate {
         
     }
     
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        
+        print("=== ПОДРОБНАЯ ОТЛАДКА ===")
+        print("scrollView frame: \(scrollView.frame)")
+        print("scrollView contentSize: \(scrollView.contentSize)")
+        print("contentView frame: \(contentView.frame)")
+        print("textField frame: \(textField.frame)")
+        print("categoryScheduleBlock frame: \(categoryScheduleBlock.frame)")
+        print("emojiCollectionView frame: \(emojiCollectionView.frame)")
+        
+        let totalContentHeight = textField.frame.height + 24 +
+                                categoryScheduleBlock.frame.height + 32 +
+                                emojiCollectionView.frame.height + 32
+        print("Расчетная высота контента: \(totalContentHeight)")
+        print("scrollView bounds height: \(scrollView.bounds.height)")
+        print("Нужен скролл: \(totalContentHeight > scrollView.bounds.height)")
+
+        scrollView.isScrollEnabled = true
+        scrollView.alwaysBounceVertical = true
+    }
+    
+    // MARK: - Setup Methods
     private func fillData(with tracker: Tracker) {
         textField.text = tracker.name
         
@@ -358,34 +350,8 @@ class NewHabitViewController: UIViewController, UITextFieldDelegate {
         updateScheduleButtonTitle()
     }
     
-    override func viewDidAppear(_ animated: Bool) {
-        super.viewDidAppear(animated)
-        
-        print("=== ПОДРОБНАЯ ОТЛАДКА ===")
-        print("scrollView frame: \(scrollView.frame)")
-        print("scrollView contentSize: \(scrollView.contentSize)")
-        print("contentView frame: \(contentView.frame)")
-        print("textField frame: \(textField.frame)")
-        print("categoryScheduleBlock frame: \(categoryScheduleBlock.frame)")
-        print("emojiCollectionView frame: \(emojiCollectionView.frame)")
-        
-        let totalContentHeight = textField.frame.height + 24 +
-                                categoryScheduleBlock.frame.height + 32 +
-                                emojiCollectionView.frame.height + 32
-        print("Расчетная высота контента: \(totalContentHeight)")
-        print("scrollView bounds height: \(scrollView.bounds.height)")
-        print("Нужен скролл: \(totalContentHeight > scrollView.bounds.height)")
-
-        scrollView.isScrollEnabled = true
-        scrollView.alwaysBounceVertical = true
-    }
-    
     private func setupUI() {
-        let stackBottomButton = UIStackView()
-        stackBottomButton.axis = .horizontal
-        stackBottomButton.spacing = 8
-        stackBottomButton.distribution = .fillEqually
-        stackBottomButton.translatesAutoresizingMaskIntoConstraints = false
+        
         
         stackBottomButton.addArrangedSubview(cancelButton)
         stackBottomButton.addArrangedSubview(createButton)
@@ -428,37 +394,61 @@ class NewHabitViewController: UIViewController, UITextFieldDelegate {
                errorLabel.heightAnchor.constraint(equalToConstant: 20),
            ])
         
-        if case .edit = mode {
-            print("📌 Активируем констрейнты для режима редактирования")
-            NSLayoutConstraint.activate([
-                completedDaysLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 24),
-                completedDaysLabel.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
-                
-                textField.topAnchor.constraint(equalTo: completedDaysLabel.bottomAnchor, constant: 40),
-                textField.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
-                textField.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
-                textField.heightAnchor.constraint(equalToConstant: 75),
-                
-                categoryScheduleBlock.topAnchor.constraint(equalTo: textField.bottomAnchor, constant: 24),
-                categoryScheduleBlock.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
-                categoryScheduleBlock.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
-                categoryScheduleBlock.heightAnchor.constraint(equalToConstant: 150.5),
-            ])
-        } else {
-            print("📌 Активируем констрейнты для режима создания")
-            NSLayoutConstraint.activate([
-                textField.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 24),
-                textField.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
-                textField.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
-                textField.heightAnchor.constraint(equalToConstant: 75),
-                
-                categoryScheduleBlock.topAnchor.constraint(equalTo: textField.bottomAnchor, constant: 24),
-                categoryScheduleBlock.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
-                categoryScheduleBlock.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
-                categoryScheduleBlock.heightAnchor.constraint(equalToConstant: 150.5),
-            ])
-        }
+        setupModeConstraints()
         
+        setupCommonConstraints()
+        
+        let heightConstraint = contentView.heightAnchor.constraint(greaterThanOrEqualTo: scrollView.heightAnchor)
+        heightConstraint.priority = .defaultLow
+        heightConstraint.isActive = true
+        
+        categoryScheduleBlockTopWhenErrorHidden = categoryScheduleBlock.topAnchor.constraint(equalTo: textField.bottomAnchor, constant: 24)
+        categoryScheduleBlockTopWhenErrorVisible = categoryScheduleBlock.topAnchor.constraint(equalTo: errorLabel.bottomAnchor, constant: 32)
+        
+        if case .edit = mode {
+            categoryScheduleBlockTopWhenErrorHidden.isActive = false
+            categoryScheduleBlockTopWhenErrorVisible.isActive = false
+            print("🔽 Старые констрейнты деактивированы для режима редактирования")
+        } else {
+            categoryScheduleBlockTopWhenErrorHidden.isActive = true
+            print("🔽 Стандартный констрейнт активирован для режима создания")
+        }
+    }
+    
+    private func setupModeConstraints() {
+            if case .edit = mode {
+                print("📌 Активируем констрейнты для режима редактирования")
+                NSLayoutConstraint.activate([
+                    completedDaysLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 24),
+                    completedDaysLabel.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
+                    
+                    textField.topAnchor.constraint(equalTo: completedDaysLabel.bottomAnchor, constant: 40),
+                    textField.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
+                    textField.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
+                    textField.heightAnchor.constraint(equalToConstant: 75),
+                    
+                    categoryScheduleBlock.topAnchor.constraint(equalTo: textField.bottomAnchor, constant: 24),
+                    categoryScheduleBlock.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
+                    categoryScheduleBlock.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
+                    categoryScheduleBlock.heightAnchor.constraint(equalToConstant: 150.5),
+                ])
+            } else {
+                print("📌 Активируем констрейнты для режима создания")
+                NSLayoutConstraint.activate([
+                    textField.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 24),
+                    textField.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
+                    textField.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
+                    textField.heightAnchor.constraint(equalToConstant: 75),
+                    
+                    categoryScheduleBlock.topAnchor.constraint(equalTo: textField.bottomAnchor, constant: 24),
+                    categoryScheduleBlock.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
+                    categoryScheduleBlock.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
+                    categoryScheduleBlock.heightAnchor.constraint(equalToConstant: 150.5),
+                ])
+            }
+        }
+    
+    private func setupCommonConstraints() {
         NSLayoutConstraint.activate([
             categoryButton.topAnchor.constraint(equalTo: categoryScheduleBlock.topAnchor),
             categoryButton.heightAnchor.constraint(equalToConstant: 75),
@@ -481,8 +471,6 @@ class NewHabitViewController: UIViewController, UITextFieldDelegate {
             emojiCollectionView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
             emojiCollectionView.heightAnchor.constraint(equalToConstant: 550),
             emojiCollectionView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -32),
-            
-            
         ])
         
         NSLayoutConstraint.activate([
@@ -490,9 +478,7 @@ class NewHabitViewController: UIViewController, UITextFieldDelegate {
             stackBottomButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
             stackBottomButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
             stackBottomButton.heightAnchor.constraint(equalToConstant: 60),
-            
-            
-            
+        
             scrollView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
@@ -503,26 +489,10 @@ class NewHabitViewController: UIViewController, UITextFieldDelegate {
             contentView.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor),
             contentView.bottomAnchor.constraint(equalTo:  scrollView.bottomAnchor),
             contentView.widthAnchor.constraint(equalTo: scrollView.widthAnchor)
-            
         ])
-        
-        let heightConstraint = contentView.heightAnchor.constraint(greaterThanOrEqualTo: scrollView.heightAnchor)
-        heightConstraint.priority = .defaultLow
-        heightConstraint.isActive = true
-        
-        categoryScheduleBlockTopWhenErrorHidden = categoryScheduleBlock.topAnchor.constraint(equalTo: textField.bottomAnchor, constant: 24)
-        categoryScheduleBlockTopWhenErrorVisible = categoryScheduleBlock.topAnchor.constraint(equalTo: errorLabel.bottomAnchor, constant: 32)
-        
-        if case .edit = mode {
-            categoryScheduleBlockTopWhenErrorHidden.isActive = false
-            categoryScheduleBlockTopWhenErrorVisible.isActive = false
-            print("🔽 Старые констрейнты деактивированы для режима редактирования")
-        } else {
-            categoryScheduleBlockTopWhenErrorHidden.isActive = true
-            print("🔽 Стандартный констрейнт активирован для режима создания")
-        }
     }
     
+    // MARK: - Layout Helpers
     private func createCompositionalLayout() -> UICollectionViewLayout {
         let layout = UICollectionViewCompositionalLayout { sectionIndex, layoutEnvironment in
             guard let section = Section(rawValue: sectionIndex) else {
@@ -598,7 +568,7 @@ class NewHabitViewController: UIViewController, UITextFieldDelegate {
         return section
     }
     
-    
+    // MARK: - Actions
     @objc private func dismissKeyboard() {
         textField.resignFirstResponder()
     }
@@ -613,7 +583,6 @@ class NewHabitViewController: UIViewController, UITextFieldDelegate {
         
         navigationController?.pushViewController(categoryVC, animated: true)
     }
-    
     
     @objc private func createButtonTapped() {
         guard let name = textField.text,
@@ -660,11 +629,30 @@ class NewHabitViewController: UIViewController, UITextFieldDelegate {
         navigationController?.pushViewController(newScheduleVC, animated: true)
     }
     
+    @objc private func cancelTapButton() {
+        dismiss(animated: true)
+    }
+    
+    @objc private func textFieldDidChange() {
+        guard let text = textField.text else { return }
+        
+        let isOverLimit = text.count >= 38
+        
+        errorLabel.isHidden = !isOverLimit
+        
+        categoryScheduleBlockTopWhenErrorHidden.isActive = !isOverLimit
+        categoryScheduleBlockTopWhenErrorVisible.isActive = isOverLimit
+        conditionCreateButton()
+    }
+    
+    // MARK: - UI Update Methods
     private func updateScheduleButtonTitle() {
         let displayText = scheduleDisplayText
         print("📝 Обновление расписания: displayText = \(displayText)")
         
-        let fullText = "Расписание\n\(displayText)"
+        let scheduleTitle = NSLocalizedString("newhabit.schedule", comment: "Schedule button")
+        
+        let fullText = "\(scheduleTitle)\n\(displayText)"
         
         let attributed = NSMutableAttributedString(string: fullText)
         
@@ -678,7 +666,7 @@ class NewHabitViewController: UIViewController, UITextFieldDelegate {
             .foregroundColor: UIColor.appGray
         ]
 
-        let titleWithNewline = "Расписание\n"
+        let titleWithNewline = "\(scheduleTitle)\n"
         let titleRange = NSRange(location: 0, length: titleWithNewline.utf16.count)
         let daysRange = NSRange(location: titleRange.length, length: displayText.utf16.count)
         
@@ -698,7 +686,8 @@ class NewHabitViewController: UIViewController, UITextFieldDelegate {
         let titleText = selectedCategoryTitle
         print("📝 updateCategoryButtonTitle вызван с titleText: \(titleText)")
         
-        let fullText = "Категория\n\(titleText)"
+        let categoryTitle = NSLocalizedString("newhabit.category", comment: "Category button")
+        let fullText = "\(categoryTitle)\n\(titleText)"
         
         let attributed = NSMutableAttributedString(string: fullText)
         
@@ -712,7 +701,7 @@ class NewHabitViewController: UIViewController, UITextFieldDelegate {
             .foregroundColor: UIColor.appGray
         ]
 
-        let titleWithNewline = "Категория\n"
+        let titleWithNewline = "\(categoryTitle)\n"
         let mainTitleRange = NSRange(location: 0, length: titleWithNewline.utf16.count)
         
         let categoryRange = NSRange(location: mainTitleRange.length, length: titleText.utf16.count)
@@ -742,24 +731,9 @@ class NewHabitViewController: UIViewController, UITextFieldDelegate {
         createButton.isEnabled = isValid
         createButton.backgroundColor = isValid ? .appBlack : .appGray
     }
-    
-    @objc private func cancelTapButton() {
-        dismiss(animated: true)
-    }
-    
-    @objc private func textFieldDidChange() {
-        guard let text = textField.text else { return }
-        
-        let isOverLimit = text.count >= 38
-        
-        errorLabel.isHidden = !isOverLimit
-        
-        categoryScheduleBlockTopWhenErrorHidden.isActive = !isOverLimit
-        categoryScheduleBlockTopWhenErrorVisible.isActive = isOverLimit
-        conditionCreateButton()
-    }
-    
 }
+
+// MARK: - UITextFieldDelegate
 extension NewHabitViewController {
     func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
         guard let currentText = textField.text else { return true }
@@ -769,6 +743,7 @@ extension NewHabitViewController {
     }
 }
 
+// MARK: - UICollectionViewDataSource
 extension NewHabitViewController: UICollectionViewDataSource {
     func numberOfSections(in collectionView: UICollectionView) -> Int {
         return Section.allCases.count
@@ -820,148 +795,37 @@ extension NewHabitViewController: UICollectionViewDataSource {
     }
 }
 
+// MARK: - UICollectionViewDelegate
 extension NewHabitViewController: UICollectionViewDelegate {
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         guard let section = Section(rawValue: indexPath.section) else { return }
         
         switch section {
         case .emoji:
+            
+            let previousIndex = selectedEmojiIndex
             selectedEmojiIndex = indexPath.item
-            collectionView.reloadSections(IndexSet(integer: Section.emoji.rawValue))
+
+            var indexPaths: [IndexPath] = []
+            if let previousIndex {
+                indexPaths.append(IndexPath(item: previousIndex, section: Section.emoji.rawValue))
+            }
+            indexPaths.append(IndexPath(item: indexPath.item, section: Section.emoji.rawValue))
+
+            collectionView.reloadItems(at: indexPaths)
+
         case .color:
+            let previousIndex = selectedColorIndex
             selectedColorIndex = indexPath.item
-            collectionView.reloadSections(IndexSet(integer: Section.color.rawValue))
+
+            var indexPaths: [IndexPath] = []
+            if let previousIndex {
+                indexPaths.append(IndexPath(item: previousIndex, section: Section.color.rawValue))
+            }
+            indexPaths.append(IndexPath(item: indexPath.item, section: Section.color.rawValue))
+
+            collectionView.reloadItems(at: indexPaths)
         }
         conditionCreateButton()
-    }
-}
-
-final class EmojiCell: UICollectionViewCell {
-    static let reuseIdentifier = "EmojiCell"
-    
-    private lazy var emojiLabel: UILabel = {
-        let label = UILabel()
-        label.font = .systemFont(ofSize: 32, weight: .bold)
-        label.textAlignment = .center
-        label.translatesAutoresizingMaskIntoConstraints = false
-        return label
-    }()
-    
-    override init(frame: CGRect) {
-        super.init(frame: frame)
-        setupUI()
-    }
-    
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-    
-    private func setupUI() {
-        contentView.addSubview(emojiLabel)
-        NSLayoutConstraint.activate([
-            emojiLabel.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
-            emojiLabel.centerYAnchor.constraint(equalTo: contentView.centerYAnchor)
-        ])
-        contentView.layer.cornerRadius = 16
-        contentView.clipsToBounds = true
-    }
-    func configure(with emoji: String, isSelected: Bool) {
-        emojiLabel.text = emoji
-        contentView.backgroundColor = isSelected ? .appLightGray : .clear
-    }
-    override func prepareForReuse() {
-        super.prepareForReuse()
-        emojiLabel.text = nil
-        contentView.backgroundColor = .clear
-    }
-    
-}
-
-final class ColorCell: UICollectionViewCell {
-    static let reuseIdentifier = "ColorCell"
-    
-    private lazy var colorView: UIView = {
-        let view = UIView()
-        view.translatesAutoresizingMaskIntoConstraints = false
-        view.layer.cornerRadius = 8
-        view.clipsToBounds = true
-        
-        return view
-    }()
-    
-    override init(frame: CGRect) {
-        super.init(frame: frame)
-        setupUI()
-    }
-    
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-    
-    private func setupUI() {
-        contentView.addSubview(colorView)
-        NSLayoutConstraint.activate([
-            colorView.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
-            colorView.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
-            colorView.heightAnchor.constraint(equalToConstant: 40),
-            colorView.widthAnchor.constraint(equalToConstant: 40)
-        ])
-        
-        contentView.layer.cornerRadius = 8
-        contentView.clipsToBounds = true
-    }
-    
-    func configure(with color: UIColor, isSelected: Bool) {
-        colorView.backgroundColor = color
-        
-        if isSelected {
-            contentView.layer.borderWidth = 3
-            contentView.layer.borderColor = color.withAlphaComponent(0.3).cgColor
-        } else {
-            contentView.layer.borderWidth = 0
-            contentView.layer.borderColor = nil
-        }
-    }
-    
-    override func prepareForReuse() {
-        super.prepareForReuse()
-        colorView.backgroundColor = nil
-        contentView.layer.borderWidth = 0
-        contentView.layer.borderColor = nil
-    }
-}
-
-final class HeaderView: UICollectionReusableView {
-    static let reuseIdentifier = "Header"
-    
-    private lazy var titleLabel: UILabel = {
-        let label = UILabel()
-        label.font = .systemFont(ofSize: 19, weight: .bold)
-        label.textColor = .appBlack
-        label.translatesAutoresizingMaskIntoConstraints = false
-        
-        return label
-    }()
-    
-    override init(frame: CGRect) {
-        super.init(frame: frame)
-        setupUI()
-    }
-    
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-    private func setupUI() {
-       addSubview(titleLabel)
-        NSLayoutConstraint.activate([
-            titleLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 10),
-            titleLabel.centerYAnchor.constraint(equalTo: centerYAnchor),
-            titleLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -10)
-        ])
-        
-    }
-    
-    func configure(with title: String) {
-        titleLabel.text = title
     }
 }

@@ -9,7 +9,7 @@ final class NewCategoryViewController: UIViewController {
     // MARK: - UI Elements
     private lazy var textField: UITextField = {
         let textField = UITextField()
-        textField.placeholder = "Введите название категории"
+        textField.placeholder = NSLocalizedString("newcategory.textfield.placeholder", comment: "Enter category name placeholder")
         textField.font = UIFont.systemFont(ofSize: 17, weight: .regular)
         textField.borderStyle = .none
         textField.layer.cornerRadius = 16
@@ -24,9 +24,29 @@ final class NewCategoryViewController: UIViewController {
         return textField
     }()
     
+    private lazy var keyboardToolbar: UIToolbar = {
+        let toolbar = UIToolbar()
+        toolbar.sizeToFit()
+        
+        let flexibleSpace = UIBarButtonItem(
+            barButtonSystemItem: .flexibleSpace,
+            target: nil,
+            action: nil
+        )
+        
+        let doneButton = UIBarButtonItem(
+            title: NSLocalizedString("common.done", comment: "Done"),
+            style: .done,
+            target: self,
+            action: #selector(dismissKeyboard)
+        )
+        toolbar.items = [flexibleSpace, doneButton]
+        return toolbar
+    }()
+    
     private lazy var doneButton: UIButton = {
         let button = UIButton(type: .system)
-        button.setTitle("Готово", for: .normal)
+        button.setTitle(NSLocalizedString("newcategory.done.button", comment: "Done button"), for: .normal)
         button.backgroundColor = .appGray
         button.setTitleColor(.appWhite, for: .normal)
         button.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .medium)
@@ -47,11 +67,13 @@ final class NewCategoryViewController: UIViewController {
     
     // MARK: - Setup UI
     private func setupUI() {
-        title = "Новая категория"
+        title = NSLocalizedString("newcategory.title", comment: "New category screen title")
         view.backgroundColor = .appWhite
         
         view.addSubview(textField)
         view.addSubview(doneButton)
+        
+        textField.inputAccessoryView = keyboardToolbar
         
         NSLayoutConstraint.activate([
             textField.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 24),
@@ -71,6 +93,10 @@ final class NewCategoryViewController: UIViewController {
         let hasText = !(textField.text?.isEmpty ?? true)
         doneButton.isEnabled = hasText
         doneButton.backgroundColor = hasText ? .appBlack : .appGray
+    }
+    
+    @objc private func dismissKeyboard() {
+        textField.resignFirstResponder()
     }
     
     @objc private func doneButtonTapped() {

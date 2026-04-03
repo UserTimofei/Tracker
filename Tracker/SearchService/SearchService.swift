@@ -5,7 +5,7 @@ protocol SearchServiceDelegate: AnyObject {
     func didUpdateSearchResults(_ filteredCategories: [TrackerCategory])
 }
 
-class SearchService {
+final class SearchService {
 
     weak var delegate: SearchServiceDelegate?
     private var allCategories: [TrackerCategory] = []
@@ -15,6 +15,9 @@ class SearchService {
     }
     
     func filterCategories(searchText: String) {
+        
+        print("⚙️ SearchService: Фильтрация по тексту '\(searchText)'")
+        
         if searchText.isEmpty {
             delegate?.didUpdateSearchResults(allCategories)
             return
@@ -39,6 +42,10 @@ class SearchService {
                 ))
             }
         }
+        
+        print("⚙️ SearchService: Найдено категорий: \(result.count)")
+        
         delegate?.didUpdateSearchResults(result)
     }
 }
+

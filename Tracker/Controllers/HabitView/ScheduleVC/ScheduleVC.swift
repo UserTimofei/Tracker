@@ -1,13 +1,15 @@
 import UIKit
 
-class ScheduleVC: UIViewController {
+// MARK: - ScheduleVC
+final class ScheduleVC: UIViewController {
     
+    // MARK: - Properties
     var selectedDays: Set<WeekDay> = []
     var onSave: ((Set<WeekDay>) -> Void)?
     
+    // MARK: - UI Elements
     private let tableViewContainer = UIView()
     private let tableView = UITableView()
-    
     
     private lazy var doneButton: UIButton = {
         let button = UIButton(type: .system)
@@ -15,7 +17,10 @@ class ScheduleVC: UIViewController {
         button.layer.cornerRadius = 16
         button.clipsToBounds = true
         button.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .medium)
-        button.setTitle("Готово", for: .normal)
+        button.setTitle(
+            NSLocalizedString("schedule.done.button", comment: "Done button"),
+            for: .normal
+        )
         button.setTitleColor(.appWhite, for: .normal)
         button.contentHorizontalAlignment = .center
         button.translatesAutoresizingMaskIntoConstraints = false
@@ -24,22 +29,27 @@ class ScheduleVC: UIViewController {
         return button
     }()
     
+    // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
         setupNavigationItem()
         setupUI()
     }
     
+    // MARK: - Setup Methods
     private func setupNavigationItem() {
         navigationItem.hidesBackButton = true
     }
     
     private func setupUI() {
         setupTableView()
-        title = "Расписание"
+        
+        title = NSLocalizedString("schedule.title", comment: "Schedule screen title")
+        
         view.backgroundColor = .appWhite
         view.addSubview(tableViewContainer)
         view.addSubview(doneButton)
+        
         tableView.translatesAutoresizingMaskIntoConstraints = false
         tableViewContainer.translatesAutoresizingMaskIntoConstraints = false
         tableViewContainer.addSubview(tableView)
@@ -72,9 +82,9 @@ class ScheduleVC: UIViewController {
         tableView.backgroundColor = .appBackground
         tableView.register(ScheduleCell.self, forCellReuseIdentifier: ScheduleCell.reuseIdentifier)
         tableView.separatorStyle = .none
-
     }
     
+    // MARK: - Actions
     @objc private func cancelNewHabit() {
         print("📤 ScheduleVC: передаем выбранные дни: \(selectedDays.map { $0.rawValue })")
         onSave?(selectedDays)
@@ -82,6 +92,7 @@ class ScheduleVC: UIViewController {
     }
 }
 
+// MARK: - UITableViewDataSource & UITableViewDelegate
 extension ScheduleVC: UITableViewDataSource, UITableViewDelegate {
     func numberOfSections(in tableView: UITableView) -> Int {
         return 1
@@ -110,75 +121,5 @@ extension ScheduleVC: UITableViewDataSource, UITableViewDelegate {
     
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
         return 75
-    }
-}
-
-final class ScheduleCell: UITableViewCell {
-    static let reuseIdentifier = "ScheduleCell"
-    
-    private let separatorView = UIView()
-    var onToggle: ((Bool) -> Void)?
-    
-    private lazy var titleLabel: UILabel = {
-        let title = UILabel()
-        title.font = UIFont.systemFont(ofSize: 16, weight: .medium)
-        title.textColor = .appBlack
-        title.translatesAutoresizingMaskIntoConstraints = false
-        
-        return title
-    }()
-    
-    private lazy var switchControl: UISwitch = {
-        let switchControl = UISwitch()
-        switchControl.addTarget(self, action: #selector(switchValueChanged(_:)), for: .valueChanged)
-        switchControl.translatesAutoresizingMaskIntoConstraints = false
-        switchControl.onTintColor = .appBlue
-        
-        return switchControl
-    }()
-    
-    override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
-            super.init(style: style, reuseIdentifier: reuseIdentifier)
-        selectionStyle = .none
-            setupUI()
-        }
-        
-        required init?(coder: NSCoder) {
-            fatalError("init(coder:) has not been implemented")
-        }
-    
-    private func setupUI() {
-        contentView.backgroundColor = .clear
-        contentView.addSubview(titleLabel)
-        contentView.addSubview(switchControl)
-        
-        separatorView.backgroundColor = .appGray
-        separatorView.translatesAutoresizingMaskIntoConstraints = false
-        contentView.addSubview(separatorView)
-        
-        NSLayoutConstraint.activate([
-            titleLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
-            titleLabel.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
-            
-            switchControl.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
-            switchControl.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
-            
-            separatorView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
-            separatorView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant:  -16),
-            separatorView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
-            separatorView.heightAnchor.constraint(equalToConstant: 0.5)
-        ])
-    }
-    
-    func configure(with day: WeekDay, isSelected: Bool, onToggle: @escaping (Bool) -> Void, isLast: Bool = false) {
-        titleLabel.text = day.title
-        switchControl.isOn = isSelected
-        self.onToggle = onToggle
-        
-        separatorView.isHidden = isLast
-    }
-    
-    @objc private func switchValueChanged(_ sender: UISwitch) {
-        onToggle?(sender.isOn)
     }
 }

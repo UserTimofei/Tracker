@@ -71,5 +71,3 @@ final class TrackerStoreFacade: TrackerStoreProtocol {
             return try trackerStore.fetchCategoryForTracker(trackerId: trackerId)
         }
 }
-    
-

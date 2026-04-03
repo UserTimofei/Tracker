@@ -194,6 +194,8 @@ final class TrackerCell: UICollectionViewCell {
         numbersOfCompletedTrackers: Int,
         onToggle: ((Bool) -> Void)? = nil) {
             
+            print("📝 configure: счетчик установлен = \(numbersOfCompletedTrackers)")
+            
             self.tracker = tracker
             self.isCompleted = isCompleted
             self.completionCount = numbersOfCompletedTrackers
@@ -210,7 +212,7 @@ final class TrackerCell: UICollectionViewCell {
             completeButton.tintColor = .white
             
             let word = Self.declinationOfDays(numbersOfCompletedTrackers)
-            counterLabel.text = "\(numbersOfCompletedTrackers) \(word)"
+            counterLabel.text = word
             
             emojiLabel.text = tracker.emoji
             titleLabelCell.text = tracker.name
@@ -233,28 +235,21 @@ final class TrackerCell: UICollectionViewCell {
     
     func updateCounter(_ newCount: Int) {
         completionCount = newCount
-        let word = Self.declinationOfDays(newCount)
-        counterLabel.text = "\(newCount) \(word)"
+        counterLabel.text = Self.declinationOfDays(newCount)
     }
-    
     
     static func declinationOfDays(_ count: Int) -> String {
+        let format = NSLocalizedString("days.count", comment: "Days count with plural form")
+        let result = String.localizedStringWithFormat(format, count)
+
+        print("🌍 Текущая локаль: \(Locale.current.identifier)")
+        print("🔑 Сырая строка формата из bundles: '\(format)'")
+        print("✅ Итоговый результат: '\(result)'")
+
         
-        let lastTwoDigits = count % 100
-        
-        if (11...14).contains(lastTwoDigits) {
-            return "дней"
-        }
-        
-        switch count % 10 {
-        case 1:
-            return "день"
-        case 2, 3, 4:
-            return "дня"
-        default:
-            return "дней"
-        }
+        return result
     }
+
     
     override func prepareForReuse() {
         super.prepareForReuse()
@@ -267,6 +262,7 @@ final class TrackerCell: UICollectionViewCell {
         emojiLabel.text = nil
         titleLabelCell.text = nil
         counterLabel.text = nil
+        counterLabel.attributedText = nil
         completeButton.isSelected = false
         completeButton.isEnabled = true
         contentView.alpha = 1.0
